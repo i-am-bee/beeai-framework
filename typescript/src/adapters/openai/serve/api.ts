@@ -67,7 +67,7 @@ export class ChatCompletionAPI {
             .observe((emitter) => {
               // Match all events — required because the emitter is typed as
               // Emitter<unknown> at the AnyAgent abstraction. We emit text deltas
-              // from "update" (ReActAgent incremental tokens) and from "success"
+              // from "update" (ReActAgent's final answer, not its thoughts or tool steps) and from "success"
               // (ToolCallingAgent emits only start/success, with the final answer
               // in state.result). This keeps streaming working for both agents.
               // Only this run's events: a sub-agent's answer (e.g. after a handoff) is not the reply.
@@ -75,7 +75,7 @@ export class ChatCompletionAPI {
                 "*.*",
                 async (eventData: any, event) => {
                   let delta: string | undefined;
-                  if (event.name === "update") {
+                  if (event.name === "update" && eventData?.update?.key === "final_answer") {
                     delta = eventData?.update?.value;
                   } else if (event.name === "success") {
                     delta = eventData?.state?.result?.text;
