@@ -8,7 +8,14 @@ from typing import Any
 from typing_extensions import TypedDict, Unpack
 
 from beeai_framework.tools import ToolError
-from beeai_framework.tools.mcp.utils.session_provider import MCPClient, MCPSessionProvider
+from beeai_framework.tools.mcp.utils.session_provider import (
+    MCPClient,
+    MCPClientSource,
+    MCPSessionProvider,
+    MCPToolCallAttempt,
+    _active_tool_call,
+    is_recoverable_session_error,
+)
 
 try:
     from mcp import ClientSession
@@ -89,6 +96,7 @@ class MCPTool(Tool[BaseModel, ToolRunOptions, MCPToolOutput]):
 
         super().__init__(dict(options))
         self._session = session
+        self._session_provider: MCPSessionProvider | None = None
         self._tool = tool
         self._smart_parsing = smart_parsing
         self._exclude_none = exclude_none
@@ -150,10 +158,34 @@ class MCPTool(Tool[BaseModel, ToolRunOptions, MCPToolOutput]):
         # mcp 2.x keeps snapshots of the caller's contextvars (in-flight requests, timers) after the call returns.
         # Without the run context in them they don't keep this tool, and so its session, alive.
         storage.set(None)  # type: ignore[arg-type]
-        return await self._session.call_tool(name=self._tool.name, arguments=arguments)
+        provider = self._session_provider
+        if provider is None:
+            return await self._session.call_tool(name=self._tool.name, arguments=arguments)
+
+        session = await provider.session()
+        session = await provider.ensure_tools_listed(session)
+        for retry in range(2):
+            attempt = MCPToolCallAttempt()
+            token = _active_tool_call.set(attempt)
+            try:
+                return await session.call_tool(name=self._tool.name, arguments=arguments)
+            except Exception as error:
+                _active_tool_call.reset(token)
+                token = None
+                if retry or not is_recoverable_session_error(error, request_sent=attempt.request_sent):
+                    raise
+                logger.warning(f"MCP session ended before completing {self._tool.name}; reconnecting once.")
+                session = await provider.reconnect(session)
+                session = await provider.ensure_tools_listed(session)
+            finally:
+                if token is not None:
+                    _active_tool_call.reset(token)
+        raise RuntimeError("Unreachable MCP tool retry state")
 
     @classmethod
-    async def from_client(cls, client: MCPClient | ClientSession, **options: Unpack[MCPToolKwargs]) -> list["MCPTool"]:
+    async def from_client(
+        cls, client: MCPClientSource | ClientSession, **options: Unpack[MCPToolKwargs]
+    ) -> list["MCPTool"]:
         if isinstance(client, ClientSession):
             return await cls.from_session(client, **options)
 
@@ -164,12 +196,19 @@ class MCPTool(Tool[BaseModel, ToolRunOptions, MCPToolOutput]):
         except BaseException:
             manager.destroy()
             raise
-        with MCPSessionProvider._lock:
-            manager.refs += len(instance)
+        if instance:
+            manager.mark_tools_listed(session)
+            manager.acquire(len(instance))
+            for tool in instance:
+                tool._session_provider = manager
+        else:
+            manager.destroy()
         return instance
 
     def __del__(self) -> None:
-        MCPSessionProvider.destroy_by_session(self._session)
+        provider = getattr(self, "_session_provider", None)
+        if provider is not None:
+            provider.release()
 
     @classmethod
     async def from_session(cls, session: ClientSession, **options: Unpack[MCPToolKwargs]) -> list["MCPTool"]:
@@ -195,7 +234,9 @@ class MCPTool(Tool[BaseModel, ToolRunOptions, MCPToolOutput]):
             tool=self._tool.model_copy(),
             **options,
         )
-        MCPSessionProvider._acquire_by_session(self._session)
+        tool._session_provider = self._session_provider
+        if self._session_provider is not None:
+            self._session_provider.acquire()
         tool.middlewares.extend(self.middlewares)
         tool._cache = cloned_cache
         return tool
