@@ -8,6 +8,7 @@ import { EventEmitter } from "node:events";
 import { z } from "zod";
 import { ChatCompletionAPI } from "@/adapters/openai/serve/api.js";
 import { ResponsesAPI } from "@/adapters/openai/serve/responses_api.js";
+import { ReActAgent } from "@/agents/react/agent.js";
 import { ToolCallingAgent } from "@/agents/toolCalling/agent.js";
 import { ChatModel, ChatModelInput, ChatModelOutput } from "@/backend/chat.js";
 import { AssistantMessage } from "@/backend/message.js";
@@ -85,6 +86,25 @@ function createLeadAgent(): AnyAgent {
   return lead as unknown as AnyAgent;
 }
 
+/** Streams a ReAct-formatted reply, token by token. */
+class ReActModel extends ScriptedModel {
+  async *_createStream(_input: ChatModelInput, _ctx: GetRunContext<typeof this>) {
+    for (const token of ["Thought: I know this.\n", "Final Answer: ", "react done"]) {
+      yield new ChatModelOutput([new AssistantMessage(token)]);
+    }
+  }
+}
+
+function createReActAgent(): AnyAgent {
+  const agent = new ReActAgent({
+    llm: new ReActModel(),
+    tools: [],
+    memory: new UnconstrainedMemory(),
+  });
+  vi.spyOn(agent, "clone").mockResolvedValue(agent);
+  return agent as unknown as AnyAgent;
+}
+
 async function stream(api: ChatCompletionAPI | ResponsesAPI, body: object): Promise<string> {
   const req = Object.assign(new EventEmitter(), { body, headers: {} });
   const chunks: string[] = [];
@@ -118,6 +138,33 @@ describe("OpenAI-compatible server streaming", () => {
       .filter(Boolean);
 
     expect(deltas).toEqual(["lead done"]);
+  });
+
+  it("streams only the final answer of a ReActAgent (chat completions)", async () => {
+    const api = new ChatCompletionAPI(async () => createReActAgent());
+    const output = await stream(api, {
+      model: "react",
+      stream: true,
+      messages: [{ role: "user", content: "go" }],
+    });
+    const deltas = output
+      .split("\n\n")
+      .filter((line) => line.startsWith("data: {"))
+      .map((line) => JSON.parse(line.slice("data: ".length)).choices[0].delta.content)
+      .filter(Boolean);
+
+    expect(deltas).toEqual(["react done"]);
+  });
+
+  it("streams only the final answer of a ReActAgent (responses)", async () => {
+    const api = new ResponsesAPI(async () => createReActAgent());
+    const output = await stream(api, { model: "react", stream: true, input: "go" });
+    const deltas = output
+      .split("\n\n")
+      .filter((event) => event.startsWith("event: response.output_text.delta\n"))
+      .map((event) => JSON.parse(event.split("\ndata: ")[1]).delta);
+
+    expect(deltas).toEqual(["react done"]);
   });
 
   it("streams only the lead agent's answer after a handoff (responses)", async () => {
