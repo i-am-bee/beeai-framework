@@ -264,6 +264,34 @@ def test_input_schema_skips_path_item_fields_that_are_not_operations() -> None:
 
 
 @pytest.mark.unit
+def test_input_schema_keeps_parameter_descriptions() -> None:
+    # The description is what tells the model what a parameter means; the name alone often does not.
+    schema = _schema(
+        "https://example.invalid",
+        "/pets",
+        {
+            "parameters": [
+                {"name": "status", "in": "query", "description": "Adoption status", "schema": {"type": "string"}},
+                {"name": "limit", "in": "query", "schema": {"type": "integer", "description": "Max items, 1-100"}},
+                {"name": "offset", "in": "query", "schema": {"type": "integer"}},
+                {"$ref": "#/components/parameters/Sort"},
+            ]
+        },
+    )
+    schema["components"] = {
+        "parameters": {"Sort": {"name": "sort", "in": "query", "schema": {"type": "string", "description": "Order"}}}
+    }
+
+    [tool] = OpenAPITool.from_schema(schema)
+    properties = tool.input_schema.model_json_schema()["properties"]["parameters"]["properties"]
+
+    assert properties["status"]["description"] == "Adoption status"
+    assert properties["limit"]["description"] == "Max items, 1-100"
+    assert properties["offset"]["description"] == "offset"
+    assert properties["sort"]["description"] == "Order"
+
+
+@pytest.mark.unit
 def test_from_schema_skips_path_item_extensions() -> None:
     schema = _schema("https://example.invalid", "/pets", {})
     schema["paths"]["/pets"]["x-amazon-apigateway-any-method"] = {"responses": {"200": {"description": "ok"}}}
