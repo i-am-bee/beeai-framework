@@ -262,6 +262,7 @@ class TransformersChatModel(ChatModel):
             **(
                 self.parameters.model_dump(exclude_unset=True, exclude_none=True)
                 | input.model_dump(
+                    # pyrefly: ignore [no-matching-overload]
                     include=set(ChatModelParameters.model_fields),
                     exclude_unset=True,
                     exclude_none=True,

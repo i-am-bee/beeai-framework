@@ -32,7 +32,7 @@ def _make_model(parameters: ChatModelParameters | None = None) -> tuple[Transfor
 
 async def _generate_kwargs(model: TransformersChatModel, generate: MagicMock, **options: Any) -> dict[str, Any]:
     await model.run([UserMessage("hi")], **options)
-    return generate.call_args.kwargs
+    return dict(generate.call_args.kwargs)
 
 
 @pytest.mark.asyncio
