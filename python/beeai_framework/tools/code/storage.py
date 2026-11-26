@@ -74,7 +74,10 @@ class LocalPythonStorage(PythonStorage):
         files = os.listdir(self._local_working_dir)
         python_files = []
         for file in files:
-            python_id = self._compute_hash(os.path.join(self._local_working_dir, file))
+            file_path = os.path.join(self._local_working_dir, file)
+            if not os.path.isfile(file_path):
+                continue
+            python_id = self._compute_hash(file_path)
             python_files.append(
                 PythonFile(
                     filename=file,
