@@ -310,6 +310,76 @@ def test_from_schema_skips_path_item_extensions() -> None:
 
 @pytest.mark.unit
 @pytest.mark.asyncio
+async def test_request_body_with_self_referencing_component_schema(monkeypatch: pytest.MonkeyPatch) -> None:
+    # A component schema that refers to itself (a tree of categories) must not make the input schema loop forever.
+    schema = _schema(
+        "https://example.invalid",
+        "/categories",
+        {"requestBody": {"content": {"application/json": {"schema": {"$ref": "#/components/schemas/Category"}}}}},
+    )
+    schema["paths"]["/categories"]["post"] = schema["paths"]["/categories"].pop("get")
+    schema["components"] = {
+        "schemas": {
+            "Category": {
+                "type": "object",
+                "required": ["name"],
+                "properties": {
+                    "name": {"type": "string"},
+                    "subcategories": {"type": "array", "items": {"$ref": "#/components/schemas/Category"}},
+                },
+            }
+        }
+    }
+    captured: dict[str, Any] = {}
+
+    async def fake_request(self: httpx.AsyncClient, method: str, url: str, **kwargs: Any) -> httpx.Response:
+        captured["json"] = kwargs["json"]
+        return httpx.Response(201, text="{}")
+
+    monkeypatch.setattr(httpx.AsyncClient, "request", fake_request)
+
+    [tool] = OpenAPITool.from_schema(schema)
+    input_schema = tool.input_schema
+    json.dumps(input_schema.model_json_schema())
+    with pytest.raises(ValueError):
+        input_schema.model_validate({"body": {"subcategories": []}})
+
+    body = {"name": "a", "subcategories": [{"name": "b", "subcategories": [{"name": "c"}]}]}
+    await tool.run({"body": body})
+
+    assert captured["json"] == body
+
+
+@pytest.mark.unit
+def test_parameter_with_mutually_referencing_component_schemas() -> None:
+    # Filter -> Condition -> Filter, used by a query parameter.
+    schema = _schema(
+        "https://example.invalid",
+        "/items",
+        {"parameters": [{"name": "filter", "in": "query", "schema": {"$ref": "#/components/schemas/Filter"}}]},
+    )
+    schema["components"] = {
+        "schemas": {
+            "Filter": {
+                "type": "object",
+                "properties": {"all": {"type": "array", "items": {"$ref": "#/components/schemas/Condition"}}},
+            },
+            "Condition": {
+                "type": "object",
+                "properties": {"field": {"type": "string"}, "nested": {"$ref": "#/components/schemas/Filter"}},
+            },
+        }
+    }
+
+    [tool] = OpenAPITool.from_schema(schema)
+    input_schema = tool.input_schema
+    json.dumps(input_schema.model_json_schema())
+
+    input_schema.model_validate({"parameters": {"filter": {"all": [{"field": "a", "nested": {"all": []}}]}}})
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
 async def test_header_and_cookie_parameters_are_sent_as_headers(monkeypatch: pytest.MonkeyPatch) -> None:
     schema = _schema(
         "https://example.invalid",
