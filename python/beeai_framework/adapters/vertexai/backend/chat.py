@@ -21,6 +21,11 @@ class VertexAIChatModel(LiteLLMChatModel):
     def provider_id(self) -> ProviderName:
         return "vertexai"
 
+    @property
+    def requires_guided_tool_schema_enum(self) -> bool:
+        """Apply the Gemini schema subset only to Gemini models on Vertex."""
+        return self.model_id.rsplit("/", maxsplit=1)[-1].startswith("gemini-")
+
     def __init__(
         self,
         model_id: str | None = None,

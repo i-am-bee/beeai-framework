@@ -19,6 +19,11 @@ class GeminiChatModel(LiteLLMChatModel):
     def provider_id(self) -> ProviderName:
         return "gemini"
 
+    @property
+    def requires_guided_tool_schema_enum(self) -> bool:
+        """Gemini structured output supports enum, but not const."""
+        return True
+
     def __init__(
         self,
         model_id: str | None = None,

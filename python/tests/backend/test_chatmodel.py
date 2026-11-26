@@ -2,16 +2,21 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import asyncio
+import json
 from collections.abc import AsyncGenerator
 from typing import Any
+from unittest.mock import AsyncMock
 
+import httpx
 import pytest
 import pytest_asyncio
+from google.oauth2.credentials import Credentials
 from pydantic import BaseModel
 
 from beeai_framework.adapters.amazon_bedrock import AmazonBedrockChatModel
 from beeai_framework.adapters.anthropic import AnthropicChatModel
 from beeai_framework.adapters.azure_openai import AzureOpenAIChatModel
+from beeai_framework.adapters.gemini import GeminiChatModel
 from beeai_framework.adapters.groq import GroqChatModel
 from beeai_framework.adapters.ollama import OllamaChatModel
 from beeai_framework.adapters.openai import OpenAIChatModel
@@ -26,6 +31,7 @@ from beeai_framework.backend import (
     CustomMessage,
     UserMessage,
 )
+from beeai_framework.backend.errors import ChatModelError
 from beeai_framework.backend.types import ChatModelInput
 from beeai_framework.cache import SlidingCache
 from beeai_framework.context import RunContext
@@ -257,6 +263,116 @@ class FailThenFixDummyModel(ChatModel):
 def tool_add(a: int, b: int) -> int:
     """Add two numbers."""
     return a + b
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize(
+    "provider,model_id",
+    [
+        ("gemini", "gemini-3-flash-preview"),
+        ("vertex_ai", "gemini-3-flash-preview"),
+        ("vertex_ai", "publishers/google/models/gemini-3-flash-preview"),
+    ],
+)
+@pytest.mark.asyncio
+async def test_litellm_guided_tool_request(provider: str, model_id: str, monkeypatch: pytest.MonkeyPatch) -> None:
+    if provider == "gemini":
+        model = GeminiChatModel(model_id, api_key="test", tool_choice_support={"auto"})
+    else:
+        credentials = {
+            "type": "authorized_user",
+            "token": "test",
+            "client_id": "test",
+            "client_secret": "test",
+            "refresh_token": "test",
+        }
+        monkeypatch.setattr(Credentials, "refresh", lambda self, request: None)
+        model = VertexAIChatModel(
+            model_id, project="test", location="us-central1", credentials=credentials, tool_choice_support={"auto"}
+        )
+
+    @tool()
+    def think(thought: str) -> str:
+        """Think about the problem."""
+        return thought
+
+    bodies = []
+
+    async def capture_request(client: httpx.AsyncClient, request: httpx.Request, **kwargs: Any) -> httpx.Response:
+        bodies.append(json.loads(request.content))
+        # Stop at the wire: no model response or background success callbacks are needed.
+        return httpx.Response(400, request=request, json={"error": {"message": "Request captured"}})
+
+    monkeypatch.setattr(httpx.AsyncClient, "send", capture_request)
+    with pytest.raises(ChatModelError) as error:
+        await model.run(
+            [UserMessage("add")],
+            tools=[think, tool_add],
+            tool_choice="required",
+            parallel_tool_calls=False,
+            max_retries=0,
+        )
+    assert "Request captured" in error.value.explain()
+    (body,) = bodies
+    assert "tools" not in body
+    generation = body["generationConfig"]
+    schema = generation.get("response_json_schema") or generation["response_schema"]
+    names = [variant["properties"]["name"] for variant in schema["anyOf"]]
+    assert [name["enum"] for name in names] == [["think"], ["tool_add"]]
+    assert all("const" not in name for name in names)
+
+
+@pytest.fixture
+def completion_request(monkeypatch: pytest.MonkeyPatch) -> AsyncMock:
+    # These cases inspect the request only; stop before any response is parsed.
+    completion = AsyncMock(side_effect=ChatModelError("Request captured"))
+    monkeypatch.setattr("beeai_framework.adapters.litellm.chat.acompletion", completion)
+    return completion
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_gemini_preserves_native_tools_and_custom_response_format(completion_request: AsyncMock) -> None:
+    model = GeminiChatModel("gemini-3-flash-preview", api_key="test", tool_choice_support={"auto"})
+    messages: list[AnyMessage] = [UserMessage("add")]
+    with pytest.raises(ChatModelError, match="Request captured"):
+        await model.run(messages, tools=[tool_add], tool_choice="auto", max_retries=0)
+    request = completion_request.await_args_list[-1].kwargs
+    assert request["tools"][0]["function"]["name"] == tool_add.name
+    assert "response_format" not in request
+
+    custom = {"type": "json_schema", "json_schema": {"name": "Custom", "schema": {"type": "string", "const": "x"}}}
+    with pytest.raises(ChatModelError, match="Request captured"):
+        await model.run(messages, tools=[tool_add], tool_choice="required", response_format=custom, max_retries=0)
+    assert completion_request.await_args_list[-1].kwargs["response_format"] == custom
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_guided_schema_enum_is_limited_to_gemini_adapters(completion_request: AsyncMock) -> None:
+    models: list[tuple[ChatModel, str]] = [
+        (OpenAIChatModel("gpt-4o", api_key="test", tool_choice_support={"auto"}), "const"),
+        (GeminiChatModel("gemini-3-flash-preview", api_key="test", tool_choice_support={"auto"}), "enum"),
+        (
+            VertexAIChatModel(
+                "gemini-3-flash-preview", project="test", location="us-central1", tool_choice_support={"auto"}
+            ),
+            "enum",
+        ),
+        (
+            VertexAIChatModel("non-gemini-test", project="test", location="us-central1", tool_choice_support={"auto"}),
+            "const",
+        ),
+    ]
+
+    for model, expected_keyword in models:
+        with pytest.raises(ChatModelError, match="Request captured"):
+            await model.run([UserMessage("add 1 and 2")], tools=[tool_add], tool_choice="required", max_retries=0)
+        name_schema = completion_request.await_args_list[-1].kwargs["response_format"]["json_schema"]["schema"][
+            "properties"
+        ]["name"]
+        assert expected_keyword in name_schema
+        assert ({"enum", "const"} - {expected_keyword}).isdisjoint(name_schema)
 
 
 @pytest.mark.asyncio

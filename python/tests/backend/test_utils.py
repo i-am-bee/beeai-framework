@@ -2,10 +2,10 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import json
-from typing import Any
+from typing import Any, Literal
 
 import pytest
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError
 from syrupy.assertion import SnapshotAssertion
 
 from beeai_framework.backend.utils import generate_tool_union_schema, inline_schema_refs
@@ -24,6 +24,13 @@ def tool_greet(name: int) -> str:
     """Greet tool"""
 
     return f"Hello {name}!"
+
+
+@tool()
+def tool_literal(kind: Literal["fixed"]) -> str:
+    """Tool with a literal-valued parameter."""
+
+    return kind
 
 
 @pytest.mark.unit
@@ -115,3 +122,70 @@ def test_inline_schema_refs_keeps_only_recursive_definitions() -> None:
     assert result["$defs"]["Expr"] == {"anyOf": [literal, {"$ref": "#/$defs/Op"}]}
     assert result["$defs"]["Op"]["properties"]["left"] == {"$ref": "#/$defs/Expr"}
     json.dumps(result)
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize("strict", [True, False])
+@pytest.mark.parametrize("tools", [[tool_sum], [tool_sum, tool_greet]])
+@pytest.mark.parametrize(("wrapped", "parallel"), [(False, False), (True, False), (False, True), (True, True)])
+def test_guided_tool_names(tools: list[AnyTool], strict: bool, wrapped: bool, parallel: bool) -> None:
+    result, validator = generate_tool_union_schema(
+        tools,
+        strict=strict,
+        allow_parallel_tool_calls=parallel,
+        allow_top_level_union=not wrapped,
+        use_enum_for_tool_names=True,
+    )
+    schema = result["json_schema"]["schema"]
+    multiple = len(tools) > 1
+    if multiple and wrapped:
+        schema = schema["properties"]["item"]
+    if multiple and parallel:
+        schema = schema["items"]
+    variants = schema.get("anyOf", [schema])
+    for variant, expected in zip(variants, tools, strict=True):
+        name = variant["properties"]["name"]
+        assert name["enum"] == [expected.name]
+        assert "const" not in name
+
+    def validate(name: str, arguments: dict[str, int]) -> None:
+        call = {"name": name, "parameters": arguments}
+        value = [call] if multiple and parallel else call
+        validator.model_validate({"item": value} if multiple and wrapped else value)
+
+    validate("tool_sum", {"a": 1, "b": 2})
+    with pytest.raises(ValidationError):
+        validate("final_answer", {"a": 1, "b": 2})
+    if multiple:
+        validate("tool_greet", {"name": 1})
+        with pytest.raises(ValidationError):
+            validate("tool_sum", {"name": 1})
+
+
+@pytest.mark.unit
+def test_guided_tool_parameter_literal_unchanged() -> None:
+    def parameters(use_enum: bool) -> dict:
+        result, _ = generate_tool_union_schema(
+            [tool_literal],
+            strict=False,
+            allow_parallel_tool_calls=False,
+            allow_top_level_union=True,
+            use_enum_for_tool_names=use_enum,
+        )
+        return result["json_schema"]["schema"]["properties"]["parameters"]
+
+    assert parameters(True) == parameters(False)
+    assert parameters(True)["properties"]["kind"]["const"] == "fixed"
+
+
+@pytest.mark.unit
+def test_empty_guided_tool_name(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(tool_sum, "name", "")
+    with pytest.raises(ValueError, match="must not be empty"):
+        generate_tool_union_schema(
+            [tool_sum],
+            strict=False,
+            allow_parallel_tool_calls=False,
+            allow_top_level_union=True,
+            use_enum_for_tool_names=True,
+        )
