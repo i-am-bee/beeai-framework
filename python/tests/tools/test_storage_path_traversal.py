@@ -160,3 +160,21 @@ async def test_upload_symlinked_file_works(storage: LocalPythonStorage, tmp_path
     assert len(result) == 1
     dest = interp / "link_hash"
     assert dest.read_text() == "csv,data"
+
+
+# ── list_files: subdirectories ──────────────────────────────────────────────
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_list_files_ignores_subdirectories(storage: LocalPythonStorage) -> None:
+    """list_files() must return files only; download() can create subdirectories."""
+    local = Path(storage.local_working_dir)
+    (local / "output.txt").write_text("content")
+    nested = local / "subdir"
+    nested.mkdir()
+    (nested / "nested.txt").write_text("nested content")
+
+    files = await storage.list_files()
+
+    assert [file.filename for file in files] == ["output.txt"]
