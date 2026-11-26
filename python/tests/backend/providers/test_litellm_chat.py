@@ -11,6 +11,7 @@ import litellm
 import pytest
 from litellm import ModelResponse as LiteLLMModelResponse
 from litellm import ModelResponseStream
+from litellm.litellm_core_utils.get_model_cost_map import GetModelCostMap
 from litellm.types.utils import (
     ChatCompletionMessageToolCall,
     Choices,
@@ -1056,7 +1057,7 @@ class TestAnthropicRequestBody:
     def test_registration_does_not_overwrite_a_known_model(
         self, monkeypatch: pytest.MonkeyPatch, known_key: str, model_id: str
     ) -> None:
-        sentinel = {"litellm_provider": "anthropic", "mode": "chat", "sentinel": True}
+        sentinel = {"litellm_provider": "anthropic", "mode": "chat", "sentinel": True, "supports_output_config": True}
         monkeypatch.setattr(litellm, "model_cost", {known_key: sentinel})
         register = MagicMock()
         monkeypatch.setattr(litellm, "register_model", register)
@@ -1064,7 +1065,36 @@ class TestAnthropicRequestBody:
         AnthropicChatModel(model_id, api_key="t")
 
         register.assert_not_called()
-        assert litellm.model_cost == {known_key: {"litellm_provider": "anthropic", "mode": "chat", "sentinel": True}}
+        assert litellm.model_cost == {known_key: sentinel}
+
+    @pytest.mark.unit
+    @pytest.mark.parametrize(
+        ("known_key", "model_id"),
+        [
+            ("claude-sonnet-5-5", "claude-sonnet-5-5"),
+            ("anthropic/claude-opus-5-5-x", "claude-opus-5-5-x"),
+        ],
+    )
+    def test_known_model_without_the_capability_gets_it_merged(
+        self, monkeypatch: pytest.MonkeyPatch, known_key: str, model_id: str
+    ) -> None:
+        """LiteLLM's remote model map can list a model with `supports_native_structured_output: False` only."""
+        # start from the bundled map so the result does not depend on the remote one fetched at import
+        monkeypatch.setattr(litellm, "model_cost", GetModelCostMap.load_local_model_cost_map())
+        entry = {
+            "litellm_provider": "anthropic",
+            "mode": "chat",
+            "input_cost_per_token": 1e-06,
+            "supports_native_structured_output": False,
+        }
+        litellm.model_cost[known_key] = entry
+
+        AnthropicChatModel(model_id, api_key="t")
+
+        merged = litellm.model_cost[known_key]
+        assert merged["supports_output_config"] is True
+        assert merged["input_cost_per_token"] == 1e-06
+        assert merged["supports_native_structured_output"] is False
 
     @pytest.mark.unit
     @pytest.mark.asyncio
@@ -1076,3 +1106,117 @@ class TestAnthropicRequestBody:
 
         assert "output_config" not in params
         assert params["response_format"] == {"type": "json_object"}
+
+
+class TestClaudeOnCloudProvidersForcedToolChoice:
+    """Claude 5.5-era models on Bedrock and Vertex reject a forced `tool_choice` like they do on the Anthropic API."""
+
+    AFFECTED: ClassVar[list[tuple[str, str]]] = [
+        ("bedrock", "us.anthropic.claude-opus-5-5-v1:0"),
+        ("bedrock", "anthropic.claude-sonnet-5-5-v1:0"),
+        ("bedrock", "eu.anthropic.claude-fable-5-1-v1:0"),
+        ("vertex", "claude-opus-5-5@20261101"),
+        ("vertex", "claude-sonnet-5-5"),
+        ("vertex", "claude-mythos-5-1@20261101"),
+    ]
+
+    @staticmethod
+    def _make(kind: str, model_id: str, **kwargs: Any) -> Any:
+        if kind == "bedrock":
+            return AmazonBedrockChatModel(
+                model_id, access_key_id="k", secret_access_key="s", region="us-east-1", **kwargs
+            )
+        return VertexAIChatModel(model_id, project="p", location="us-east5", **kwargs)
+
+    @staticmethod
+    def _tool() -> Any:
+        @tool
+        def get_weather(city: str) -> str:
+            """Get the weather of a city."""
+            return "sunny"
+
+        return get_weather
+
+    @pytest.mark.unit
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(("kind", "model_id"), AFFECTED)
+    async def test_required_is_sent_as_structured_output(self, kind: str, model_id: str) -> None:
+        captured = await TestAnthropicForcedToolChoice._captured_request(
+            self._make(kind, model_id), tools=[self._tool()], tool_choice="required"
+        )
+
+        assert "tool_choice" not in captured
+        assert "tools" not in captured
+        assert "response_format" not in captured
+        assert captured["output_config"]["format"]["type"] == "json_schema"
+
+    @pytest.mark.unit
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(("kind", "model_id"), AFFECTED)
+    async def test_single_tool_is_sent_as_structured_output(self, kind: str, model_id: str) -> None:
+        t = self._tool()
+        captured = await TestAnthropicForcedToolChoice._captured_request(
+            self._make(kind, model_id), tools=[t], tool_choice=t
+        )
+
+        assert "tool_choice" not in captured
+        assert "tools" not in captured
+        assert captured["output_config"]["format"]["type"] == "json_schema"
+
+    @pytest.mark.unit
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(("kind", "model_id"), AFFECTED)
+    async def test_output_config_survives_litellm_param_mapping(self, kind: str, model_id: str) -> None:
+        captured = await TestAnthropicForcedToolChoice._captured_request(
+            self._make(kind, model_id), tools=[self._tool()], tool_choice="required"
+        )
+        provider = "bedrock" if kind == "bedrock" else "vertex_ai"
+        params = litellm.get_optional_params(
+            model=model_id, custom_llm_provider=provider, output_config=captured["output_config"]
+        )
+
+        assert params["output_config"]["format"]["type"] == "json_schema"
+
+    @pytest.mark.unit
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        ("kind", "model_id"),
+        [
+            ("bedrock", "us.anthropic.claude-sonnet-5-v1:0"),
+            ("bedrock", "anthropic.claude-sonnet-4-5-v1:0"),
+            ("vertex", "claude-opus-5@20261101"),
+        ],
+    )
+    async def test_unaffected_models_still_force_the_tool(self, kind: str, model_id: str) -> None:
+        captured = await TestAnthropicForcedToolChoice._captured_request(
+            self._make(kind, model_id), tools=[self._tool()], tool_choice="required"
+        )
+
+        assert captured["tool_choice"] == "required"
+        assert "output_config" not in captured
+
+    @pytest.mark.unit
+    @pytest.mark.asyncio
+    async def test_non_claude_models_are_untouched(self) -> None:
+        captured = await TestAnthropicForcedToolChoice._captured_request(
+            self._make("bedrock", "meta.llama3-70b-instruct-v1:0"), tools=[self._tool()], tool_choice="required"
+        )
+
+        assert captured["tool_choice"] == "required"
+
+    @pytest.mark.unit
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(("kind", "model_id"), AFFECTED[:1] + AFFECTED[3:4])
+    async def test_auto_is_kept_on_affected_models(self, kind: str, model_id: str) -> None:
+        captured = await TestAnthropicForcedToolChoice._captured_request(
+            self._make(kind, model_id), tools=[self._tool()], tool_choice="auto"
+        )
+
+        assert captured["tool_choice"] == "auto"
+        assert captured["tools"]
+
+    @pytest.mark.unit
+    def test_explicit_tool_choice_support_is_kept(self) -> None:
+        model = self._make("bedrock", "us.anthropic.claude-opus-5-5-v1:0", tool_choice_support={"required", "auto"})
+
+        assert model._tool_choice_support == {"required", "auto"}

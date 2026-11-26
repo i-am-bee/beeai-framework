@@ -22,6 +22,7 @@ from litellm import (
     cost_per_token,
     get_supported_openai_params,
 )
+from litellm.llms.anthropic.chat.transformation import AnthropicConfig
 from litellm.types.utils import StreamingChoices
 from pydantic import BaseModel
 from typing_extensions import Unpack
@@ -64,6 +65,10 @@ from beeai_framework.utils.strings import is_valid_unicode_escape_sequence, to_j
 logger = Logger(__name__)
 
 _DEFAULT_TIMEOUT_FALLBACK = 600.0
+
+# Claude models that answer a forced `tool_choice` (`any` / `tool`) with an HTTP 400. Matched anywhere in the id, so
+# dated snapshots and the Bedrock / Vertex spellings are covered while `claude-opus-5` / `claude-sonnet-5` are not.
+_CLAUDE_WITHOUT_FORCED_TOOL_CHOICE = re.compile(r"claude-(?:opus-5-5|sonnet-5-5|fable-5-1|mythos-5-1)")
 
 # Claude models that answer any `temperature` other than 1 with a 400: Opus 4.7+, Sonnet 5+, Haiku 5+, Fable, Mythos.
 # Also matches Bedrock (`anthropic.claude-sonnet-5-v1:0`) and Vertex AI (`claude-opus-5-5@...`) model IDs.
@@ -125,6 +130,44 @@ class LiteLLMChatModel(ChatModel, ABC):
         litellm.drop_params = True
         # disable LiteLLM caching in favor of our own
         litellm.disable_cache()
+
+    @property
+    def _rejects_forced_tool_choice(self) -> bool:
+        return bool(_CLAUDE_WITHOUT_FORCED_TOOL_CHOICE.search(self.model_id.lower()))
+
+    def _avoid_forced_tool_choice(self, kwargs: ChatModelKwargs) -> None:
+        """Stop advertising `required` / `single` tool choice for Claude models that reject it.
+
+        `ChatModel` then asks for the tool call through the response format, which `_send_as_output_config` sends
+        as Anthropic's structured outputs.
+        """
+        if not self._rejects_forced_tool_choice:
+            return
+        if kwargs.get("tool_choice_support") is None:
+            self._tool_choice_support.discard("required")
+            self._tool_choice_support.discard("single")
+
+        # LiteLLM drops `output_config` (and falls back to a forced tool call) for models it does not know
+        name = self.model_id.removeprefix("anthropic/")
+        # (also when LiteLLM's remote model map lists it without the capability: merge the flag, keep its pricing)
+        known = [key for key in (name, f"{self._litellm_provider_id}/{name}") if key in litellm.model_cost]
+        if not known:
+            litellm.register_model(
+                {name: {"litellm_provider": self._litellm_provider_id, "mode": "chat", "supports_output_config": True}}
+            )
+        else:
+            for key in known:
+                if not litellm.model_cost[key].get("supports_output_config"):
+                    litellm.register_model({key: {**litellm.model_cost[key], "supports_output_config": True}})
+
+    def _send_as_output_config(self, input: ChatModelInput, params: dict[str, Any]) -> None:
+        """Replace the `response_format` of a model that rejects forced tool use with `output_config.format`."""
+        if not (self._rejects_forced_tool_choice and input.response_format):
+            return
+        output_format = AnthropicConfig().map_response_format_to_anthropic_output_format(params.get("response_format"))
+        if output_format:
+            params.pop("response_format", None)
+            params["output_config"] = {**(params.get("output_config") or {}), "format": dict(output_format)}
 
     def _unset_implicit_temperature(self, kwargs: ChatModelKwargs) -> None:
         """Forget the `temperature=0` default, keeping a temperature the caller passed in `parameters`."""
