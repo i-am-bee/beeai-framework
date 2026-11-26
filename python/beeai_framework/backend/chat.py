@@ -453,6 +453,11 @@ class ChatModel(Runnable[ChatModelOutput]):
         """
         raise NotImplementedError
 
+    @property
+    def requires_guided_tool_schema_enum(self) -> bool:
+        """Whether guided tool schemas need tool names expressed as singleton enums."""
+        return False
+
     def _prepare_model_input(
         self, input: list[AnyMessage], options: ChatModelOptions
     ) -> tuple[ChatModelInput, ChatModelResponseConfig]:
@@ -482,6 +487,7 @@ class ChatModel(Runnable[ChatModelOutput]):
                 allow_top_level_union=self.supports_top_level_unions,
                 allow_parallel_tool_calls=parallel_tool_calls,
                 fallback_tool=fallback_tool,
+                use_enum_for_tool_names=self.requires_guided_tool_schema_enum,
             )
             if force_tool_call_via_response_format and tools
             else (response_format, None)

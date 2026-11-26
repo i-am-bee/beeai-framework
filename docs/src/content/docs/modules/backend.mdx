@@ -743,6 +743,8 @@ console.log(response.object);
 
 ### Tool calling
 
+In Python, when a required tool call is guided by a response schema, the Gemini adapter and Vertex models whose final model ID component starts with `gemini-` express each allowed tool name as a singleton enum. This applies only to the generated name: native tool declarations, literals inside tool parameters, caller-supplied response formats, and TypeScript are unchanged.
+
 Integrate external tools with your AI model:
 
 <CodeGroup>

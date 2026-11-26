@@ -196,9 +196,17 @@ def generate_tool_union_schema(
     allow_parallel_tool_calls: bool,
     allow_top_level_union: bool,
     fallback_tool: AnyTool | None = None,
+    use_enum_for_tool_names: bool = False,
 ) -> tuple[dict[str, Any], type[BaseModel]]:
     if not tools:
         raise ValueError("No tools provided!")
+
+    if use_enum_for_tool_names and any(not tool.name for tool in tools):
+        raise ValueError("Gemini guided tool names must not be empty.")
+
+    # Gemini needs a singleton enum on the wire; Literal still validates the call locally.
+    def tool_name_schema(schema: dict[str, Any]) -> None:
+        schema["enum"] = [schema.pop("const")]
 
     tool_schemas = [
         create_model(  # type: ignore
@@ -206,8 +214,13 @@ def generate_tool_union_schema(
             __module__="fn",
             __config__=ConfigDict(extra="forbid", populate_by_name=True, title=tool.name),
             **{
-                # pyrefly: ignore [invalid-literal]
-                "name": (Literal[tool.name], Field(description="Tool Name")),
+                "name": (
+                    # pyrefly: ignore [invalid-literal]
+                    Literal[tool.name],
+                    Field(
+                        description="Tool Name", json_schema_extra=tool_name_schema if use_enum_for_tool_names else None
+                    ),
+                ),
                 "parameters": (tool.input_schema, Field(description="Tool Parameters")),
             },
         )
