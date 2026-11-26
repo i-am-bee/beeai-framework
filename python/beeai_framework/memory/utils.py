@@ -36,6 +36,35 @@ def extract_last_tool_call_pair(memory: BaseMemory) -> tuple[AssistantMessage, T
     return tool_call, tool_response
 
 
+def extract_last_tool_exchange(memory: BaseMemory) -> list[AnyMessage]:
+    """Returns the last assistant message with tool calls and every following tool message that answers one of them.
+
+    With parallel tool calls the assistant message holds several calls and each one may be answered by its own
+    tool message. Chat APIs (OpenAI, Anthropic) reject a tool call without its result, so the exchange is kept whole.
+    """
+
+    tool_call_index = find_index(
+        memory.messages,
+        lambda msg: bool(isinstance(msg, AssistantMessage) and msg.get_tool_calls()),
+        reverse_traversal=True,
+        fallback=-1,
+    )
+    if tool_call_index < 0:
+        return []
+
+    tool_call: AssistantMessage = memory.messages[tool_call_index]  # type: ignore
+    tool_call_ids = {call.id for call in tool_call.get_tool_calls()}
+
+    return [
+        tool_call,
+        *(
+            msg
+            for msg in memory.messages[tool_call_index + 1 :]
+            if isinstance(msg, ToolMessage) and any(result.tool_call_id in tool_call_ids for result in msg.content)
+        ),
+    ]
+
+
 async def delete_messages_by_meta_key(memory: BaseMemory, *, key: str, value: Any | None = None) -> None:
     messages_to_delete: list[AnyMessage] = []
     for msg in memory.messages:

@@ -32,7 +32,7 @@ from beeai_framework.context import RunContext, RunMiddlewareType
 from beeai_framework.emitter import Emitter
 from beeai_framework.memory.base_memory import BaseMemory
 from beeai_framework.memory.unconstrained_memory import UnconstrainedMemory
-from beeai_framework.memory.utils import extract_last_tool_call_pair
+from beeai_framework.memory.utils import extract_last_tool_exchange
 from beeai_framework.runnable import runnable_entry
 from beeai_framework.template import PromptTemplate
 from beeai_framework.tools import AnyTool
@@ -204,7 +204,7 @@ class RequirementAgent(BaseAgent[RequirementAgentOutput]):
             await self.memory.add_many(final_state.memory.messages)
         else:
             await self.memory.add_many(new_messages)
-            await self.memory.add_many(extract_last_tool_call_pair(final_state.memory) or [])
+            await self.memory.add_many(extract_last_tool_exchange(final_state.memory))
 
         assert final_state.answer is not None
         return RequirementAgentOutput(
