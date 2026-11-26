@@ -35,7 +35,12 @@ export abstract class BaseMemory<TState = unknown> extends Serializable<TState> 
   }
 
   async deleteMany(messages: Iterable<Message> | AsyncIterable<Message>) {
+    // A live history iterator must finish selecting before deletions change its source.
+    const selected: Message[] = [];
     for await (const msg of messages) {
+      selected.push(msg);
+    }
+    for (const msg of selected) {
       await this.delete(msg);
     }
   }
