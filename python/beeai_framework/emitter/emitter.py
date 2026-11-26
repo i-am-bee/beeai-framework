@@ -285,6 +285,10 @@ class Emitter:
 
         async with asyncio.TaskGroup() as tg:
             for listener in reversed(list(self._listeners)):
+                # Blocking callbacks can remove listeners that are still present in this snapshot.
+                if listener not in self._listeners:
+                    continue
+
                 if not listener.match(event):
                     continue
 

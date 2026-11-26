@@ -333,6 +333,55 @@ async def test_emitter_listener_priority() -> None:
 
 @pytest.mark.unit
 @pytest.mark.asyncio
+@pytest.mark.parametrize("removal", ["cleanup_once", "cleanup_repeating", "off"])
+async def test_blocking_listener_skips_listener_removed_during_dispatch(removal: str) -> None:
+    emitter = Emitter()
+    calls: list[str] = []
+
+    def removed(_: Any, __: Any) -> None:
+        calls.append("removed")
+
+    def remove_listener(_: Any, __: Any) -> None:
+        calls.append("remover")
+        if removal == "off":
+            emitter.off(callback=removed)
+        else:
+            cleanup()
+
+    emitter.on("event", remove_listener, EmitterOptions(is_blocking=True, once=True, priority=3))
+    cleanup = emitter.on(
+        "event",
+        removed,
+        EmitterOptions(once=removal == "cleanup_once", priority=2),
+    )
+    emitter.on("event", lambda *_: calls.append("other"), EmitterOptions(once=True, priority=1))
+
+    await emitter.emit("event", None)
+    await emitter.emit("event", None)
+
+    assert calls == ["remover", "other"]
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_nested_emit_consumes_once_listener_before_outer_dispatch_reaches_it() -> None:
+    emitter = Emitter()
+    calls: list[str] = []
+
+    async def emit_again(_: Any, __: Any) -> None:
+        calls.append("nested")
+        await emitter.emit("event", None)
+
+    emitter.on("event", emit_again, EmitterOptions(is_blocking=True, once=True, priority=2))
+    emitter.on("event", lambda *_: calls.append("once"), EmitterOptions(once=True, priority=1))
+
+    await emitter.emit("event", None)
+
+    assert calls == ["nested", "once"]
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
 async def test_emitter_priority_is_honoured_for_slow_sync_callbacks() -> None:
     """Sync callbacks must run in priority order, not concurrently on worker threads.
 
