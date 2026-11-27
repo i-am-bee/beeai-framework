@@ -1811,15 +1811,14 @@ files = [
 
 [[package]]
 name = "dnspython"
-version = "2.9.0"
+version = "2.9.2"
 description = "DNS toolkit"
-optional = true
+optional = false
 python-versions = ">=3.11"
 groups = ["main"]
-markers = "extra == \"acp\" or extra == \"all\""
 files = [
-    {file = "dnspython-2.9.0-py3-none-any.whl", hash = "sha256:9a4aedb833c3c1b49214d04d44d3032ab7a9135f7c1d29a549b4ff78fd82fda9"},
-    {file = "dnspython-2.9.0.tar.gz", hash = "sha256:b44dc6b18f07a8b1c56676a19fbfdb5209415b046a9cece286baafa87ff3f7f1"},
+    {file = "dnspython-2.9.2-py3-none-any.whl", hash = "sha256:af15f7d385a6ae2fb35a796fde2138004c8c42c7389090e2addc83e3b3340fd8"},
+    {file = "dnspython-2.9.2.tar.gz", hash = "sha256:8d4d39a513e649d634004ce4d39ade2352efcea472a0247535a5c2d18a9d7ba9"},
 ]
 
 [package.extras]
@@ -5278,9 +5277,10 @@ voice-helpers = ["numpy (>=2.0.2)", "sounddevice (>=0.5.1)"]
 name = "opentelemetry-api"
 version = "1.45.2"
 description = "OpenTelemetry Python API"
-optional = false
+optional = true
 python-versions = ">=3.10"
 groups = ["main"]
+markers = "extra == \"a2a\" or extra == \"all\" or extra == \"acp\" or extra == \"evaluation\""
 files = [
     {file = "opentelemetry_api-1.45.2-py3-none-any.whl", hash = "sha256:2cbd737377e710ee740d261c94e93fa0f08e6d037c18f17513cc0a2d94479a34"},
     {file = "opentelemetry_api-1.45.2.tar.gz", hash = "sha256:d7b0008e21e5fd61cbe7a7f34ca3b6905a78ab677d9bc395e299359c75cda6b4"},
@@ -7363,15 +7363,15 @@ prompt_toolkit = ">=2.0,<4.0"
 
 [[package]]
 name = "ragas"
-version = "0.4.3"
+version = "0.4.4"
 description = "Evaluation framework for RAG and LLM applications"
 optional = true
 python-versions = ">=3.9"
 groups = ["main"]
 markers = "extra == \"all\" or extra == \"evaluation\""
 files = [
-    {file = "ragas-0.4.3-py3-none-any.whl", hash = "sha256:ef1d75f674c294e9a6e7d8e9ad261b6bf4697dad1c9cbd1a756ba7a6b4849a38"},
-    {file = "ragas-0.4.3.tar.gz", hash = "sha256:1eb1f61dbc8613ad014fdb8d630cbe9a1caec1ea01664a106993cb756128c001"},
+    {file = "ragas-0.4.4-py3-none-any.whl", hash = "sha256:75c5edbcb377f85d4db89406f96a1716d4d586078f027ec495b0f529b620c6a9"},
+    {file = "ragas-0.4.4.tar.gz", hash = "sha256:0f74ce029dcabd39139a95d362bfc8265b3cf59347af6ba3914ba6ac195be256"},
 ]
 
 [package.dependencies]
@@ -7389,8 +7389,10 @@ numpy = ">=1.21.0,<3.0.0"
 openai = ">=1.0.0"
 pillow = ">=10.4.0"
 pydantic = ">=2.0.0"
+requests = "*"
 rich = "*"
 scikit-network = "*"
+tenacity = "*"
 tiktoken = "*"
 tqdm = "*"
 typer = "*"
@@ -7399,7 +7401,7 @@ typer = "*"
 ag-ui = ["ag-ui-protocol (>=0.1.9)", "httpx (>=0.27.0)"]
 ai-frameworks = ["haystack-ai"]
 all = ["GitPython", "datacompy", "llama_index", "nltk", "pandas", "r2r", "rapidfuzz", "rouge_score", "sacrebleu", "sentence-transformers", "transformers"]
-dev-minimal = ["build (>=1.3.0)", "nbmake", "pre-commit (>=4.3.0)", "pyright (>=1.1.403)", "pytest", "pytest-asyncio", "pytest-xdist[psutil]", "ruff"]
+dev-minimal = ["build (>=1.3.0)", "nbmake", "pre-commit (>=4.3.0)", "pyright (>=1.1.403)", "pytest", "pytest-asyncio", "pytest-xdist[psutil]", "ruff (>=0.16,<0.17)"]
 dspy = ["dspy-ai (>=2.4.0)"]
 gdrive = ["google-api-python-client (>=2.178.0)", "google-auth (>=2.40.3)", "google-auth-oauthlib (>=1.2.2)"]
 git = ["GitPython"]
@@ -10697,4 +10699,4 @@ wikipedia = ["wikipedia-api"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">= 3.11,<3.15"
-content-hash = "66ce0434b94df0afe41a82e1c79208f492d6b29c51f1bb3740340cbe8586b211"
+content-hash = "d3b5ecd5dcb3e754036aa44bbde3b09dfff0c509071d62c49146311cf38e5174"
