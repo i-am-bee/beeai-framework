@@ -19,6 +19,10 @@ export type AmazonBedrockChatModelId = NonNullable<AmazonBedrockParameters[0]>;
 // Same split as @ai-sdk/amazon-bedrock: OpenAI models on Bedrock other than gpt-oss (GPT-5.x, GPT-6)
 // reject the `temperature` field on Converse.
 const OPENAI_WITHOUT_TEMPERATURE = /^(?:[^.]+\.)?openai\.(?!gpt-oss-)/;
+// Claude Opus 4.7+, Sonnet 5+, Haiku 5+, Fable and Mythos reject any `temperature` other than 1.
+// Same set as `_CLAUDE_WITHOUT_SAMPLING_PARAMS` in the Python package.
+const CLAUDE_WITHOUT_TEMPERATURE =
+  /claude-(?:fable|mythos|opus-4-[7-9]|(?:opus|sonnet|haiku)-(?:[5-9]|\d\d))/;
 
 export class AmazonBedrockChatModel extends VercelChatModel {
   constructor(
@@ -36,9 +40,10 @@ export class AmazonBedrockChatModel extends VercelChatModel {
   ): Promise<Parameters<typeof generateText<Record<string, any>>>[0]> {
     const transformed = await super.transformInput(input);
     // Drop the framework's default `temperature: 0`; a temperature set by the user is still sent.
-    return OPENAI_WITHOUT_TEMPERATURE.test(this.modelId)
-      ? { temperature: undefined, ...transformed }
-      : transformed;
+    const rejectsTemperature =
+      OPENAI_WITHOUT_TEMPERATURE.test(this.modelId) ||
+      CLAUDE_WITHOUT_TEMPERATURE.test(this.modelId);
+    return rejectsTemperature ? { temperature: undefined, ...transformed } : transformed;
   }
 
   static {
