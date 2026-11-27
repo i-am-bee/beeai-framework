@@ -935,7 +935,7 @@ class ChatModel(Runnable[ChatModelOutput]):
 
 def _create_cache_key(input: ChatModelInput) -> str:
     response_format = input.response_format
-    if isinstance(response_format, type) and issubclass(response_format, BaseModel):
+    if response_format is not None and not isinstance(response_format, dict):
         # A class serializes only as its name, so two schemas with the same name would share an entry.
         input = input.model_copy(update={"response_format": response_format.model_json_schema()})
     return to_json(input, exclude_none=True)
