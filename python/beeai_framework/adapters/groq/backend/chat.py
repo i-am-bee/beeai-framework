@@ -40,7 +40,7 @@ class GroqChatModel(LiteLLMChatModel):
     ) -> None:
         kwargs.pop("fallback_failed_generation", None)  # type: ignore
         super().__init__(
-            model_id if model_id else os.getenv("GROQ_CHAT_MODEL", "llama-3.1-8b-instant"),
+            model_id if model_id else os.getenv("GROQ_CHAT_MODEL", "openai/gpt-oss-20b"),
             provider_id="groq",
             **kwargs,
         )
