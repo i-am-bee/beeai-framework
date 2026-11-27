@@ -51,22 +51,24 @@ class StreamToolCallMiddleware(RunMiddlewareProtocol):
         self._buffer = ""
         self._delta = ""
 
+        # Listen on the run's own emitter. The instance emitter (e.g. a ChatModel shared by several agents) also
+        # receives the events of every other run of that instance, which would mix their tokens into this stream.
         self._cleanups.append(
-            ctx.instance.emitter.on(
+            ctx.emitter.on(
                 lambda meta: isinstance(meta.creator, ChatModel) and meta.name == "start",
                 callback=self._handle_start,
                 options=self._create_emitter_options(),
             )
         )
         self._cleanups.append(
-            ctx.instance.emitter.on(
+            ctx.emitter.on(
                 lambda meta: isinstance(meta.creator, ChatModel) and meta.name == "new_token",
                 callback=self._handle_new_token,
                 options=self._create_emitter_options(),
             )
         )
         self._cleanups.append(
-            ctx.instance.emitter.on(
+            ctx.emitter.on(
                 lambda meta: isinstance(meta.creator, ChatModel) and meta.name == "success",
                 callback=self._handle_success,
                 options=self._create_emitter_options(),

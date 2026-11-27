@@ -1,12 +1,17 @@
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
 
+import asyncio
 import gc
+import json
+from collections.abc import AsyncGenerator
 from typing import Any
 
 import pytest
 from pydantic import BaseModel
 
+from beeai_framework.backend import AssistantMessage, ChatModel, ChatModelOutput, MessageToolCallContent, UserMessage
+from beeai_framework.backend.types import ChatModelInput
 from beeai_framework.context import RunContext
 from beeai_framework.emitter import Emitter
 from beeai_framework.middleware.stream_tool_call import (
@@ -205,3 +210,49 @@ async def test_process_skips_emit_when_delta_is_empty() -> None:
     await m._process(tool.name, {"query": "hello"})  # same content, delta == ""
 
     assert len(events) == 1
+
+
+# ---------------------------------------------------------------------------
+# Binding — runs sharing one ChatModel
+# ---------------------------------------------------------------------------
+
+
+class _StreamingSearchModel(ChatModel):
+    """Streams a FakeSearchTool call whose query is the text of the last user message."""
+
+    model_id = "streaming_search_model"
+    # pyrefly: ignore [bad-override]
+    provider_id = "ollama"
+
+    async def _create(self, input: ChatModelInput, run: RunContext) -> ChatModelOutput:
+        raise NotImplementedError
+
+    async def _create_stream(self, input: ChatModelInput, run: RunContext) -> AsyncGenerator[ChatModelOutput]:
+        query = input.messages[-1].text
+        args = json.dumps({"query": query})
+        for start in range(0, len(args), 3):
+            await asyncio.sleep(0)  # let the other run stream in between
+            chunk = MessageToolCallContent(id=f"call_{query}", tool_name="FakeSearchTool", args=args[start : start + 3])
+            yield ChatModelOutput(output=[AssistantMessage(chunk)])
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_concurrent_runs_of_a_shared_model_do_not_mix_streams() -> None:
+    model = _StreamingSearchModel()
+    tool = FakeSearchTool()
+
+    async def stream(query: str) -> str:
+        middleware = StreamToolCallMiddleware(tool, key="query")
+        deltas: list[str] = []
+        middleware.emitter.on("update", lambda data, _: deltas.append(data.delta))
+        try:
+            await model.run([UserMessage(query)], tools=[tool], stream=True).middleware(middleware)
+        finally:
+            middleware.destroy()
+        return "".join(deltas)
+
+    first, second = await asyncio.gather(stream("first question"), stream("second question"))
+
+    assert first == "first question"
+    assert second == "second question"
