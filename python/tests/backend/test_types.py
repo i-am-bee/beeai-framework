@@ -61,3 +61,17 @@ def test_from_chunks_keeps_cached_token_counts() -> None:
     assert result.usage.total_tokens == 150
     assert result.usage.cached_prompt_tokens == 96
     assert result.usage.cached_creation_tokens == 24
+
+
+@pytest.mark.unit
+def test_from_chunks_keeps_message_id() -> None:
+    chunks = [
+        ChatModelOutput(output=[AssistantMessage("Hel", id="msg-1")]),
+        ChatModelOutput(output=[AssistantMessage("lo", id="msg-1")]),
+    ]
+
+    result = ChatModelOutput.from_chunks(chunks)
+
+    assert len(result.output) == 1
+    assert result.output[0].text == "Hello"
+    assert result.output[0].id == "msg-1"

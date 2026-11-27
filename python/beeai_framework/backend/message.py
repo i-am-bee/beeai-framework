@@ -1,6 +1,7 @@
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
 
+import copy
 import enum
 import json
 from abc import ABC
@@ -159,7 +160,10 @@ class Message(ABC, Generic[T]):
         return to_json(self.to_plain(), sort_keys=False)
 
     def clone(self) -> Self:
-        return type(self)([c.model_copy() for c in self.content], self.meta.copy())
+        cloned = copy.copy(self)
+        cloned.content = [c.model_copy() for c in self.content]
+        cloned.meta = self.meta.copy()
+        return cloned
 
 
 AssistantMessageContent = MessageTextContent | MessageToolCallContent | MessageReasoningContent

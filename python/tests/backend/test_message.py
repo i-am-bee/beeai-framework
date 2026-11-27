@@ -11,6 +11,7 @@ from beeai_framework.backend import (
     MessageFileContent,
     MessageReasoningContent,
     MessageTextContent,
+    MessageToolResultContent,
     SystemMessage,
     ToolMessage,
     UserMessage,
@@ -93,6 +94,76 @@ def test_custom_message() -> None:
     assert len(content) == 1
     assert content[0].model_dump()["text"] == text
     assert message.role == "custom"
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize(
+    "message",
+    [
+        UserMessage("hello", {"source": "original"}, id="msg-1"),
+        AssistantMessage("hello", {"source": "original"}, id="msg-1"),
+        SystemMessage("hello", {"source": "original"}, id="msg-1"),
+        ToolMessage(
+            MessageToolResultContent(result="ok", tool_name="review", tool_call_id="call-1"),
+            {"source": "original"},
+            id="msg-1",
+        ),
+    ],
+)
+def test_message_clone_keeps_id_and_is_independent(
+    message: UserMessage | AssistantMessage | SystemMessage | ToolMessage,
+) -> None:
+    clone = message.clone()
+
+    assert clone.id == message.id
+    assert clone.content is not message.content
+    assert clone.content[0] is not message.content[0]
+    assert clone.meta is not message.meta
+
+    clone.content.clear()
+    clone.meta["source"] = "clone"
+
+    assert len(message.content) == 1
+    assert message.meta["source"] == "original"
+
+
+@pytest.mark.unit
+def test_custom_message_clone_keeps_fields() -> None:
+    message = CustomMessage("critic", "looks good", {"source": "review"}, id="msg-1")
+
+    clone = message.clone()
+
+    assert clone.role == message.role
+    assert clone.text == message.text
+    assert clone.meta == message.meta
+    assert clone.id == message.id
+    assert clone.content is not message.content
+    assert clone.content[0] is not message.content[0]
+    assert clone.meta is not message.meta
+
+    clone.content.clear()
+    clone.meta["source"] = "clone"
+
+    assert message.content[0].model_dump()["text"] == "looks good"
+    assert message.meta["source"] == "review"
+
+
+@pytest.mark.unit
+def test_custom_message_subclass_clone_with_custom_init() -> None:
+    class CriticMessage(CustomMessage):
+        def __init__(self, content: str, meta: dict[str, object] | None = None) -> None:
+            super().__init__("critic", content, meta)
+
+    message = CriticMessage("looks good", {"source": "review"})
+    message.id = "msg-1"
+
+    clone = message.clone()
+
+    assert isinstance(clone, CriticMessage)
+    assert clone.id == "msg-1"
+    assert clone.role == "critic"
+    assert clone.content[0].model_dump()["text"] == "looks good"
+    assert clone.meta == message.meta
 
 
 @pytest.mark.unit
