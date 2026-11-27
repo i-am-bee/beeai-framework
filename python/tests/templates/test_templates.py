@@ -111,3 +111,18 @@ def test_fork_in_place_customizer(template: PromptTemplate[Any]) -> None:
 
     assert forked.render(task="Test", count=1) == "Forked: Test1"
     assert template.render(task="Test", count=1) == "This is the task: Test1"
+
+
+@pytest.mark.unit
+def test_render_does_not_html_escape_values() -> None:
+    class Input(BaseModel):
+        task: str
+        items: list[str]
+
+    template = PromptTemplate(
+        schema=Input,
+        template="Task: {{task}}{{#items}}\n- {{.}}{{/items}}",
+    )
+
+    task = 'if a < b && c > d: print("x")'
+    assert template.render(task=task, items=["<tag>", "R&D"]) == f"Task: {task}\n- <tag>\n- R&D"
