@@ -7363,15 +7363,15 @@ prompt_toolkit = ">=2.0,<4.0"
 
 [[package]]
 name = "ragas"
-version = "0.4.4rc1"
+version = "0.4.4"
 description = "Evaluation framework for RAG and LLM applications"
 optional = true
 python-versions = ">=3.9"
 groups = ["main"]
 markers = "extra == \"all\" or extra == \"evaluation\""
 files = [
-    {file = "ragas-0.4.4rc1-py3-none-any.whl", hash = "sha256:b0103138c15df516d837b43936fa39f2cd12a46ae9b752058b69e35693751945"},
-    {file = "ragas-0.4.4rc1.tar.gz", hash = "sha256:5656c77fe3cb8deb69ce94875750f2d9bd70141e1d1ed7fcbb976f54153221fb"},
+    {file = "ragas-0.4.4-py3-none-any.whl", hash = "sha256:75c5edbcb377f85d4db89406f96a1716d4d586078f027ec495b0f529b620c6a9"},
+    {file = "ragas-0.4.4.tar.gz", hash = "sha256:0f74ce029dcabd39139a95d362bfc8265b3cf59347af6ba3914ba6ac195be256"},
 ]
 
 [package.dependencies]
@@ -10699,4 +10699,4 @@ wikipedia = ["wikipedia-api"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">= 3.11,<3.15"
-content-hash = "f50c7269149678e5c2ecd6e7f5bbf4a41f6a6e20215781263327fe8647f3fcfa"
+content-hash = "d3b5ecd5dcb3e754036aa44bbde3b09dfff0c509071d62c49146311cf38e5174"
