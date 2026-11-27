@@ -58,7 +58,10 @@ def _target_seen_in(
             return needle
         if isinstance(needle, type) and isinstance(target, needle):
             return needle
-        if isinstance(needle, Tool) and needle is target:
+        # Agent.clone() and HandoffTool replace the tools with clones, so a tool instance also matches its clones.
+        if isinstance(needle, Tool) and (
+            needle is target or (type(needle) is type(target) and needle.name == target.name)
+        ):
             return needle
 
     return None
