@@ -297,3 +297,55 @@ describe("OpenAPITool parameter locations", () => {
     expect(fetch).not.toHaveBeenCalled();
   });
 });
+
+describe("OpenAPITool parameter descriptions", () => {
+  function parameterProperties(tool: OpenAPITool) {
+    return (tool.inputSchema().oneOf[0].properties as any).parameters.properties;
+  }
+
+  it("uses the parameter description, then the schema description, then the name", () => {
+    const tool = createTool(
+      schema([
+        {
+          name: "limit",
+          in: "query",
+          description: "Maximum number of pets to return",
+          schema: { type: "integer", description: "Ignored when the parameter has one" },
+        },
+        { name: "species", in: "query", schema: { type: "string", description: "Pet species" } },
+        { name: "cursor", in: "query", schema: { type: "string" } },
+      ]),
+    );
+
+    expect(parameterProperties(tool)).toEqual({
+      limit: { type: "integer", description: "Maximum number of pets to return" },
+      species: { type: "string", description: "Pet species" },
+      cursor: { type: "string", description: "cursor" },
+    });
+  });
+
+  it("keeps the descriptions of referenced parameters", () => {
+    const tool = createTool({
+      ...schema([
+        { $ref: "#/components/parameters/Limit" },
+        { $ref: "#/components/parameters/Tag" },
+      ]),
+      components: {
+        parameters: {
+          Limit: {
+            name: "limit",
+            in: "query",
+            description: "Maximum number of pets to return",
+            schema: { type: "integer" },
+          },
+          Tag: { name: "tag", in: "query", schema: { type: "string", description: "Pet tag" } },
+        },
+      },
+    });
+
+    expect(parameterProperties(tool)).toEqual({
+      limit: { type: "integer", description: "Maximum number of pets to return" },
+      tag: { type: "string", description: "Pet tag" },
+    });
+  });
+});
