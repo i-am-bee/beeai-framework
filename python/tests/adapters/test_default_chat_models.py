@@ -5,6 +5,7 @@ import pytest
 
 from beeai_framework.adapters.anthropic import AnthropicChatModel
 from beeai_framework.adapters.gemini import GeminiChatModel
+from beeai_framework.adapters.groq import GroqChatModel
 from beeai_framework.adapters.vertexai import VertexAIChatModel
 
 # Models that the providers have retired: a default pointing at one fails on the first request
@@ -12,15 +13,17 @@ RETIRED_MODELS = {
     "claude-3-haiku-20240307",  # retired 2026-04-20
     "gemini-2.0-flash-lite-001",
     "gemini-2.5-flash",  # no longer served to new Gemini API keys
+    "llama-3.1-8b-instant",  # retired by Groq 2026-08-16
 }
 
 
 @pytest.fixture(autouse=True)
 def provider_settings(monkeypatch: pytest.MonkeyPatch) -> None:
-    for name in ("ANTHROPIC_CHAT_MODEL", "GEMINI_CHAT_MODEL", "GOOGLE_VERTEX_CHAT_MODEL"):
+    for name in ("ANTHROPIC_CHAT_MODEL", "GEMINI_CHAT_MODEL", "GOOGLE_VERTEX_CHAT_MODEL", "GROQ_CHAT_MODEL"):
         monkeypatch.delenv(name, raising=False)
     monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key")
     monkeypatch.setenv("GEMINI_API_KEY", "test-key")
+    monkeypatch.setenv("GROQ_API_KEY", "test-key")
     monkeypatch.setenv("GOOGLE_VERTEX_PROJECT", "test-project")
     monkeypatch.setenv("GOOGLE_VERTEX_LOCATION", "us-central1")
 
@@ -31,6 +34,7 @@ def provider_settings(monkeypatch: pytest.MonkeyPatch) -> None:
     [
         (AnthropicChatModel, "claude-haiku-4-5"),
         (GeminiChatModel, "gemini-3.8-flash"),
+        (GroqChatModel, "openai/gpt-oss-20b"),
         (VertexAIChatModel, "gemini-3.8-flash"),
     ],
 )
