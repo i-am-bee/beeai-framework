@@ -11,7 +11,7 @@ import httpx
 import pytest
 import pytest_asyncio
 from google.oauth2.credentials import Credentials
-from pydantic import BaseModel
+from pydantic import BaseModel, create_model
 
 from beeai_framework.adapters.amazon_bedrock import AmazonBedrockChatModel
 from beeai_framework.adapters.anthropic import AnthropicChatModel
@@ -33,7 +33,7 @@ from beeai_framework.backend import (
 )
 from beeai_framework.backend.errors import ChatModelError
 from beeai_framework.backend.types import ChatModelInput
-from beeai_framework.cache import SlidingCache
+from beeai_framework.cache import SlidingCache, UnconstrainedCache
 from beeai_framework.context import RunContext
 from beeai_framework.errors import AbortError
 from beeai_framework.tools import tool
@@ -395,3 +395,18 @@ async def test_cache_cleared_on_tool_call_error() -> None:
         "Cache was not cleared after ChatModelToolCallError."
     )
     assert result.get_tool_calls(), "Expected result to contain tool calls"
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_cache_separates_response_formats_with_the_same_name(chat_messages_list: list[AnyMessage]) -> None:
+    model = ReverseWordsDummyModel(cache=UnconstrainedCache())
+    first_schema = create_model("Answer", reversed=(str, ...))
+    second_schema = create_model("Answer", reversed=(str, ...), language=(str, "en"))
+
+    first = await model.run(chat_messages_list, response_format=first_schema)
+    second = await model.run(chat_messages_list, response_format=second_schema)
+
+    assert isinstance(first.output_structured, first_schema)
+    assert isinstance(second.output_structured, second_schema)
+    assert await model.cache.size() == 2
