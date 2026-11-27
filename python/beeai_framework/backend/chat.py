@@ -542,7 +542,7 @@ class ChatModel(Runnable[ChatModelOutput]):
         model_input, model_response_config = self._prepare_model_input(input, kwargs)
         model_input_messages_backup = model_input.messages.copy()
 
-        cache_entry = CacheEntry(self.cache, key=to_json(model_input, exclude_none=True))
+        cache_entry = CacheEntry(self.cache, key=_create_cache_key(model_input))
 
         try:
             context = RunContext.get()
@@ -931,6 +931,14 @@ class ChatModel(Runnable[ChatModelOutput]):
                         generated_content=tool_call.model_dump_json(),
                         response=output,
                     )
+
+
+def _create_cache_key(input: ChatModelInput) -> str:
+    response_format = input.response_format
+    if isinstance(response_format, type) and issubclass(response_format, BaseModel):
+        # A class serializes only as its name, so two schemas with the same name would share an entry.
+        input = input.model_copy(update={"response_format": response_format.model_json_schema()})
+    return to_json(input, exclude_none=True)
 
 
 def _raise_tool_choice_error(
