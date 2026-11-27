@@ -18,17 +18,15 @@ MCPTool allows you to consume external tools exposed via MCP protocol.
 
 See the [MCP Tool page](/modules/tools#mcp) for more information.
 
-### Connect to ClickHouse Loom
+### Connect to an authenticated MCP server
 
-[ClickHouse Loom](https://github.com/ClickHouse/loom) exposes stored agent memory
-and indexed documents through MCP. Run a Loom server and set `LOOM_BASE_URL`
-to its base URL. Set `LOOM_TOKEN` to a token with read access to the namespaces
-the BeeAI application needs. Keep the token in the environment and use HTTPS
-for a remote Loom server. See the [Loom MCP reference](https://github.com/ClickHouse/loom/blob/main/docs/reference/mcp.md)
-for server authentication and toolsets.
+Set `MCP_SERVER_URL` to the full Streamable HTTP endpoint URL, including its
+path. Keep the bearer token in the `MCP_TOKEN` environment variable and use
+HTTPS for remote servers.
 
-The example calls `loom_search` through BeeAI to check retrieval without a
-chat-model call. Keep the MCP session open while a tool or agent uses it.
+Replace `your_tool_name` with a name from the discovered tools. Pass the
+arguments required by that tool's input schema, or use `{}` for a tool with no
+required arguments. Keep the MCP session open while a tool or agent uses it.
 
 ```python
 import asyncio
@@ -42,23 +40,31 @@ from beeai_framework.tools.mcp import MCPTool
 
 
 async def main() -> None:
-    url = f"{os.environ['LOOM_BASE_URL'].rstrip('/')}/mcp"
-    headers = {"Authorization": f"Bearer {os.environ['LOOM_TOKEN']}"}
-    async with httpx.AsyncClient(headers=headers) as http_client:
-        async with streamable_http_client(url, http_client=http_client) as (read, write, _):
-            async with ClientSession(read, write) as session:
-                await session.initialize()
-                tools = await MCPTool.from_client(session)
-                search = next((tool for tool in tools if tool.name == "loom_search"), None)
-                if search is None:
-                    raise RuntimeError("Loom did not expose the loom_search tool")
-                result = await search.run({"query": "deployment checklist", "limit": 3})
-                print(result.get_text_content())
+    url = os.environ["MCP_SERVER_URL"]
+    headers = {"Authorization": f"Bearer {os.environ['MCP_TOKEN']}"}
+    tool_name = "your_tool_name"
+
+    async with (
+        httpx.AsyncClient(headers=headers) as http_client,
+        streamable_http_client(url, http_client=http_client) as (read, write, _),
+        ClientSession(read, write) as session,
+    ):
+        await session.initialize()
+        tools = await MCPTool.from_client(session)
+        tool = next((tool for tool in tools if tool.name == tool_name), None)
+        if tool is None:
+            available = ", ".join(tool.name for tool in tools) or "(none)"
+            raise RuntimeError(f"Tool {tool_name!r} is unavailable. Available tools are {available}.")
+
+        result = await tool.run({})
+        print(result.get_text_content())
 
 
 if __name__ == "__main__":
     asyncio.run(main())
 ```
+
+You can try this with [ClickHouse Loom](https://github.com/ClickHouse/loom).
 
 <Heading level={2} id="server">MCP Server</Heading>
 
