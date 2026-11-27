@@ -24,6 +24,7 @@ import { FinalAnswerTool, runTool } from "./utils/tool.js";
 import { ToolCallChecker } from "./utils/toolCallChecker.js";
 import { z } from "zod";
 import { parseBrokenJson } from "@/internals/helpers/schema.js";
+import { isEmpty, isPlainObject } from "remeda";
 import { RequirementAgent } from "@/agents/requirement/agent.js";
 import { mergeTokenUsage } from "@/adapters/vercel/backend/utils.js";
 import { StreamToolCallMiddleware } from "@/middleware/streamToolCall.js";
@@ -138,20 +139,26 @@ export class RequirementAgentRunner {
   }
 
   protected async createFinalAnswerToolCall(fullText: string): Promise<AssistantMessage | null> {
-    // Try to extract JSON from text
+    const { finalAnswer } = this.reasoner;
+    const schema = finalAnswer.inputSchema();
+
+    // Use JSON found in the text only if it is a non-empty object. The repaired text can also be a
+    // string, number or array (for example "Hello world" becomes "Hello world"), which is not tool input.
     const parsed = parseBrokenJson(fullText, { pair: ["{", "}"] });
-    if (!parsed) {
-      // If no JSON and no custom schema, wrap in default schema
-      if (!this.reasoner.finalAnswer.customSchema) {
-        return new AssistantMessage([
-          {
-            type: "tool-call",
-            toolCallId: `call_${uuidv4().substring(0, 8)}`,
-            toolName: this.reasoner.finalAnswer.name,
-            input: this.reasoner.finalAnswer.inputSchema().parse({ response: fullText }),
-          },
-        ]);
-      }
+    const isObject = isPlainObject(parsed) && !isEmpty(parsed);
+
+    let input: unknown;
+    if (!finalAnswer.customSchema) {
+      // With the default schema, keep the whole reply unless the object is a valid final answer, so that
+      // answers which only contain braces (code, JSON examples, templates) are not cut down to a fragment.
+      input =
+        isObject && schema.safeParse(parsed).success
+          ? parsed
+          : schema.parse({ response: fullText });
+    } else if (isObject) {
+      // A custom schema still receives the object, so the tool can report validation errors to the model.
+      input = parsed;
+    } else {
       return null;
     }
 
@@ -159,8 +166,8 @@ export class RequirementAgentRunner {
       {
         type: "tool-call",
         toolCallId: `call_${uuidv4().substring(0, 8)}`,
-        toolName: this.reasoner.finalAnswer.name,
-        input: parsed,
+        toolName: finalAnswer.name,
+        input,
       },
     ]);
   }
