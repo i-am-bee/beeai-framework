@@ -178,7 +178,11 @@ class Tool(Generic[TInput, TRunOptions, TOutput], ABC):
                             max_retries=(
                                 (options.retry_options.max_retries or 0) if options and options.retry_options else 0
                             ),
-                            factor=((options.retry_options.factor or 1) if options and options.retry_options else 1),
+                            factor=(
+                                options.retry_options.factor
+                                if options and options.retry_options and options.retry_options.factor is not None
+                                else 1
+                            ),
                             signal=context.signal,
                         ),
                     )
