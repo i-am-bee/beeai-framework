@@ -5,6 +5,7 @@ from collections.abc import Callable
 from typing import Any, Generic, Self, TypeVar, overload
 
 import chevron
+from chevron.tokenizer import tokenize
 from deprecated import deprecated
 from pydantic import BaseModel, Field
 
@@ -95,7 +96,9 @@ class PromptTemplate(Generic[T]):
                 raise PromptTemplateError(f"Function named '{key}' clashes with input data field!")
             data[key] = self._config.functions[key](data)
 
-        return chevron.render(template=self._config.template, data=data)
+        # A prompt is not HTML: insert every value as is (like `{{&value}}`), as the TypeScript version does.
+        tokens = [("no escape" if tag == "variable" else tag, key) for tag, key in tokenize(self._config.template)]
+        return chevron.render(template=tokens, data=data)
 
     def fork(
         self, customizer: Callable[[PromptTemplateInput[Any]], PromptTemplateInput[Any] | None] | None
