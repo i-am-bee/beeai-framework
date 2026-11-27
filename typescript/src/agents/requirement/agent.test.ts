@@ -385,3 +385,72 @@ describe("RequirementAgent OpenAPI responses", () => {
     }
   });
 });
+
+describe("RequirementAgent plain-text final answers", () => {
+  class TextReplyModel extends ChatModel {
+    modelId = "text-reply";
+    providerId = "test";
+    emitter = Emitter.root.child({ namespace: ["model", "textReply"], creator: this });
+    constructor(public readonly reply: string) {
+      super();
+    }
+    loadSnapshot(snapshot: ReturnType<typeof this.createSnapshot>) {
+      Object.assign(this, snapshot);
+    }
+    async _create(_input: ChatModelInput, _ctx: GetRunContext<typeof this>) {
+      return new ChatModelOutput([new AssistantMessage(this.reply)]);
+    }
+    async *_createStream(input: ChatModelInput, ctx: GetRunContext<typeof this>) {
+      yield await this._create(input, ctx);
+    }
+  }
+
+  async function runWithReply(
+    reply: string,
+    options: { finalAnswerAsTool: boolean; expectedOutput?: z.ZodSchema },
+  ) {
+    const model = new TextReplyModel(reply);
+    const tool = new BusinessTool();
+    const agent = new RequirementAgent({
+      llm: model,
+      tools: [tool],
+      finalAnswerAsTool: options.finalAnswerAsTool,
+      execution: { maxRetriesPerStep: 0, totalMaxRetries: 0 },
+    });
+    try {
+      return await agent.run({ prompt: "hello", expectedOutput: options.expectedOutput });
+    } finally {
+      agent.destroy();
+      model.destroy();
+      tool.emitter.destroy();
+    }
+  }
+
+  it.each([
+    ["plain text", "Hello world"],
+    ["a number", "42"],
+    ["a JSON array", "[1, 2]"],
+    ["a JSON object fragment", 'Send `{"name": "x"}` as the request body.'],
+    ["an empty object", "Use {} for no options."],
+  ])("keeps a reply with %s as the whole response", async (_, reply) => {
+    for (const finalAnswerAsTool of [false, true]) {
+      const output = await runWithReply(reply, { finalAnswerAsTool });
+      expect(output.result.text).toBe(reply);
+      expect(output.state.result).toEqual({ response: reply });
+    }
+  });
+
+  it("uses a reply that is a valid final answer object", async () => {
+    const output = await runWithReply('{"response": "hello"}', { finalAnswerAsTool: false });
+    expect(output.result.text).toBe("hello");
+    expect(output.state.result).toEqual({ response: "hello" });
+  });
+
+  it("passes a JSON object to a custom expected output schema", async () => {
+    const output = await runWithReply('Result: {"city": "Prague", "temperature": 21}', {
+      finalAnswerAsTool: false,
+      expectedOutput: z.object({ city: z.string(), temperature: z.number() }),
+    });
+    expect(output.state.result).toEqual({ city: "Prague", temperature: 21 });
+  });
+});
