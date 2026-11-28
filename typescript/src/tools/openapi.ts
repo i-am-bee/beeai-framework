@@ -89,6 +89,9 @@ export class OpenAPITool extends Tool<OpenAPIToolOutput, OpenAPIToolOptions> {
           )
           .map(([method, methodSpec]: [string, any]) => {
             const parameters = this.getParameters(path, method);
+            const requestBody = methodSpec.requestBody?.$ref
+              ? this.getReferencedObject(methodSpec.requestBody.$ref)
+              : methodSpec.requestBody;
             return {
               additionalProperties: false,
               properties: {
@@ -101,9 +104,9 @@ export class OpenAPITool extends Tool<OpenAPIToolOutput, OpenAPIToolOptions> {
                   const: method,
                   description: methodSpec.summary || methodSpec.description,
                 },
-                ...(methodSpec.requestBody?.content?.["application/json"]?.schema
+                ...(requestBody?.content?.["application/json"]?.schema
                   ? {
-                      body: methodSpec.requestBody?.content?.["application/json"]?.schema,
+                      body: requestBody.content["application/json"].schema,
                     }
                   : {}),
                 ...(parameters.length > 0
