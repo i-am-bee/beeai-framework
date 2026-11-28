@@ -132,7 +132,10 @@ async def stream_response(
                     yield event("response.output_item.added", output_index=len(outputs), item=output.model_dump())
                     yield event("response.output_item.done", output_index=len(outputs), item=output.model_dump())
                     outputs.append(output)
-                    run.memory_messages.append(to_message(output))
+                    # Tool call items only report the agent's progress. They are not stored in the conversation:
+                    # the stored call would have no tool result, which chat APIs reject on the next turn.
+                    if not isinstance(output, types.ResponsesCustomToolCallOutput):
+                        run.memory_messages.append(to_message(output))
         for item in finish_message():
             yield item
         if not suspended and run.memory is not None:
