@@ -126,7 +126,10 @@ class ToolCallingAgent(BaseAgent[ToolCallingAgentOutput]):
             user_message = UserMessage(self._templates.task.render(task_input))
             await state.memory.add(user_message)
 
-        global_retries_counter = RetryCounter(error_type=AgentError, max_retries=run_config.total_max_retries or 1)
+        global_retries_counter = RetryCounter(
+            error_type=AgentError,
+            max_retries=run_config.total_max_retries if run_config.total_max_retries is not None else 1,
+        )
 
         final_answer_schema_cls: type[BaseModel] = (
             expected_output

@@ -101,6 +101,23 @@ async def test_raises_when_max_iterations_is_zero() -> None:
 
 @pytest.mark.asyncio
 @pytest.mark.unit
+async def test_zero_total_max_retries_does_not_retry_tool_errors() -> None:
+    model = ScriptedChatModel(
+        [
+            [tool_call_message("missing_tool", {}, call_id="c1")],
+            [final_answer_message("should not run")],
+        ]
+    )
+    agent = ToolCallingAgent(llm=model, final_answer_as_tool=False)
+
+    with pytest.raises(AgentError, match="Maximal amount of global retries"):
+        await agent.run("solve this", total_max_retries=0)
+
+    assert model.call_count == 1
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
 async def test_conversation_is_persisted_to_memory() -> None:
     model = ScriptedChatModel([[final_answer_message("hello there")]])
     agent = ToolCallingAgent(llm=model)
