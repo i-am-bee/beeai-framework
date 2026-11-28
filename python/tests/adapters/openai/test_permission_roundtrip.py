@@ -29,7 +29,16 @@ from beeai_framework.adapters.openai.serve.responses._types import ResponsesRequ
 from beeai_framework.adapters.openai.serve.responses.api import ResponsesAPI
 from beeai_framework.agents.requirement import RequirementAgent
 from beeai_framework.agents.requirement.requirements.ask_permission import AskPermissionRequirement
-from beeai_framework.backend import AnyMessage, AssistantMessage, MessageToolCallContent, ToolMessage
+from beeai_framework.backend import (
+    AnyMessage,
+    AssistantMessage,
+    ChatModelOutput,
+    MessageToolCallContent,
+    ToolMessage,
+    UserMessage,
+)
+from beeai_framework.backend.types import ChatModelInput
+from beeai_framework.context import RunContext
 from beeai_framework.emitter import Emitter
 from beeai_framework.errors import FrameworkError
 from beeai_framework.memory import SlidingMemory, SlidingMemoryConfig
@@ -38,7 +47,7 @@ from beeai_framework.serve.utils import UnlimitedMemoryManager
 from beeai_framework.tools import tool
 from beeai_framework.utils import io as io_module
 from beeai_framework.utils.io import io_confirm
-from tests.agents._scripted import ScriptedChatModel, final_answer_message, tool_call_message
+from tests.agents._scripted import ScriptedChatModel, final_answer_message, tool_call_message, weather_tool
 
 pytestmark = [pytest.mark.unit, pytest.mark.asyncio]
 
@@ -387,6 +396,43 @@ async def test_responses_conversation_memory_follows_the_agent_memory(streaming:
     assert isinstance(memory, SlidingMemory) and memory is not agent_memory
     assert [message.text for message in memory.messages] == ["third", "done"]
     assert agent.memory is agent_memory and agent_memory.is_empty()
+
+
+async def test_responses_conversation_memory_does_not_keep_tool_progress(streaming: bool) -> None:
+    llm_inputs: list[list[AnyMessage]] = []
+
+    class RecordingChatModel(ScriptedChatModel):
+        async def _create(self, input: ChatModelInput, run: RunContext) -> ChatModelOutput:
+            llm_inputs.append(list(input.messages))
+            return await super()._create(input, run)
+
+        async def clone(self) -> "RecordingChatModel":
+            return RecordingChatModel([list(response) for response in self._responses])
+
+    llm = RecordingChatModel([[tool_call_message("weather_tool", {"city": "Prague"})], [final_answer_message("sunny")]])
+    agent = RequirementAgent(llm=llm, tools=[weather_tool])
+    api = make_api("responses", _requirement_agent_factory(agent, metadata={"name": "agent"}))
+    assert isinstance(api, ResponsesAPI)
+    async with client_for(api) as client:
+        for text in ("weather?", "and tomorrow?"):
+            request = {"model": "agent", "stream": streaming, "input": text, "conversation": "c"}
+            response = result(await client.post("/responses", json=request), "responses", streaming)
+            assert answer(response, "responses") == "sunny"
+
+    memory = await api._memory_manager.get("c")
+    assert [(type(message), message.text) for message in memory.messages] == [
+        (UserMessage, "weather?"),
+        (AssistantMessage, "sunny"),
+        (UserMessage, "and tomorrow?"),
+        (AssistantMessage, "sunny"),
+    ]
+    # the first model call of the second turn gets the history; every tool call in it must have a result
+    second_turn = llm_inputs[2]
+    calls = {call.id for msg in second_turn if isinstance(msg, AssistantMessage) for call in msg.get_tool_calls()}
+    results = {
+        res.tool_call_id for msg in second_turn if isinstance(msg, ToolMessage) for res in msg.get_tool_results()
+    }
+    assert calls <= results
 
 
 async def test_manager_model_binding_and_concurrent_isolation() -> None:
