@@ -1,13 +1,14 @@
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
 
-from collections.abc import AsyncGenerator
+from collections.abc import AsyncGenerator, AsyncIterator
 from typing import Any
 
 from langchain_core.language_models import BaseChatModel, LanguageModelInput
-from langchain_core.messages import BaseMessage
+from langchain_core.messages import AIMessage, BaseMessage
+from langchain_core.messages.ai import UsageMetadata, add_usage
 from langchain_core.runnables import Runnable as LCRunnable
-from langchain_core.runnables import RunnableLambda
+from langchain_core.runnables import RunnableGenerator, RunnableLambda
 from typing_extensions import TypedDict, Unpack
 
 from beeai_framework.adapters.langchain.backend._utils import beeai_tool_to_lc_tool, to_beeai_messages, to_lc_messages
@@ -23,6 +24,16 @@ __all__ = ["LangChainChatModel"]
 class LCModelResponse(TypedDict):
     output: BaseMessage
     output_structured: Any | None
+
+
+async def _to_stream_responses(chunks: AsyncIterator[BaseMessage]) -> AsyncIterator[LCModelResponse]:
+    # LangChain reports usage as per-chunk deltas, so pass on the running total.
+    usage: UsageMetadata | None = None
+    async for chunk in chunks:
+        if isinstance(chunk, AIMessage) and chunk.usage_metadata:
+            usage = add_usage(usage, chunk.usage_metadata)
+            chunk = chunk.model_copy(update={"usage_metadata": usage})
+        yield LCModelResponse(output=chunk, output_structured=None)
 
 
 class LangChainChatModel(ChatModel):
@@ -48,7 +59,9 @@ class LangChainChatModel(ChatModel):
         # Per-call stop sequences take precedence over the model-level ones.
         return input.stop_sequences if input.stop_sequences is not None else self.parameters.stop_sequences
 
-    def _prepare_model(self, input: ChatModelInput) -> LCRunnable[LanguageModelInput, LCModelResponse]:
+    def _prepare_model(
+        self, input: ChatModelInput, *, stream: bool = False
+    ) -> LCRunnable[LanguageModelInput, LCModelResponse]:
         parameters = self.parameters.model_dump(exclude_none=True, exclude={"stop_sequences", "stream", "tool_choice"})
 
         # Note: setting via bind might not work for certain providers
@@ -73,6 +86,9 @@ class LangChainChatModel(ChatModel):
             return llm.with_structured_output(schema=input.response_format, include_raw=True) | RunnableLambda(
                 lambda data: LCModelResponse(output=data["raw"], output_structured=data["parsed"])
             )
+        elif stream:
+            # A RunnableLambda would collect the whole response before emitting it.
+            return llm | RunnableGenerator(_to_stream_responses)
         else:
             return llm | RunnableLambda(lambda data: LCModelResponse(output=data, output_structured=None))
 
@@ -84,7 +100,7 @@ class LangChainChatModel(ChatModel):
 
     async def _create_stream(self, input: ChatModelInput, run: RunContext) -> AsyncGenerator[ChatModelOutput]:
         input_messages = to_lc_messages(input.messages)
-        model = self._prepare_model(input)
+        model = self._prepare_model(input, stream=True)
 
         tmp_chunk: ChatModelOutput | None = None
         async for _chunk in model.astream(input=input_messages, stop=self._stop_sequences(input)):
