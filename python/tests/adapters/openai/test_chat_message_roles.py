@@ -44,3 +44,22 @@ def test_each_message_is_parsed_as_its_role() -> None:
 def test_unknown_role_is_rejected() -> None:
     with pytest.raises(ValueError):
         ChatCompletionRequestBody.model_validate({"model": "agent", "messages": [{"role": "robot", "content": "x"}]})
+
+
+@pytest.mark.unit
+def test_assistant_content_parts_are_flattened() -> None:
+    request = ChatCompletionRequestBody.model_validate(
+        {
+            "model": "agent",
+            "messages": [
+                {
+                    "role": "assistant",
+                    "content": [{"type": "text", "text": "Paris."}, {"type": "text", "text": "Anything else?"}],
+                }
+            ],
+        }
+    )
+
+    message = openai_message_to_beeai_message(request.messages[0])
+
+    assert [part.text for part in message.get_texts()] == ["Paris.", "Anything else?"]

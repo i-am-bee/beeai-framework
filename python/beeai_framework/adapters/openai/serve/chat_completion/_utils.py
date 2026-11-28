@@ -63,14 +63,13 @@ def openai_message_to_beeai_message(message: openai_api.ChatMessage) -> AnyMessa
         case openai_api.AssistantMessage():
             parts: list[AssistantMessageContent] = []
             if message.content:
-                parts.append(
-                    message.content  # type: ignore[arg-type]
-                    if isinstance(message.content, str)
-                    else [
-                        _openai_content_part_to_beeai_content_part(part)
-                        for part in message.content  # type ignore:[misc]
-                    ]
-                )
+                if isinstance(message.content, str):
+                    parts.append(message.content)  # type: ignore[arg-type]
+                else:
+                    parts.extend(
+                        _openai_content_part_to_beeai_content_part(part)  # type: ignore[misc]
+                        for part in message.content
+                    )
             if message.tool_calls:
                 parts.extend(
                     [
