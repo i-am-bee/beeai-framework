@@ -223,3 +223,103 @@ async def test_selected_tool_result_takes_its_call_along() -> None:
     assert memory.messages[0] is first
     assert call not in memory.messages and result not in memory.messages
     assert memory.messages[-1] is last
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_rejects_result_when_its_pending_call_would_be_evicted() -> None:
+    memory = SlidingMemory(SlidingMemoryConfig(size=2))
+    call, result_a = _call("a", "b"), _result("a")
+    await memory.add_many([call, result_a])
+    history = memory.messages.copy()
+
+    with pytest.raises(ResourceError, match=r"tool exchange cannot fit inside current memory \(2 messages\)"):
+        await memory.add(_result("b"))
+
+    assert len(memory.messages) == len(history)
+    assert all(actual is expected for actual, expected in zip(memory.messages, history, strict=True))
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_evicts_consecutive_tool_call_messages_with_their_results() -> None:
+    memory = SlidingMemory(SlidingMemoryConfig(size=5))
+    call_a, call_b = _call("a"), _call("b")
+    result_a, result_b = _result("a"), _result("b")
+    question, answer = UserMessage("next"), AssistantMessage("answer")
+
+    await memory.add_many([call_a, call_b, result_a, result_b, question])
+    await memory.add(answer)
+
+    assert memory.messages == [question, answer]
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_stores_result_when_its_call_is_not_evicted() -> None:
+    memory = SlidingMemory(SlidingMemoryConfig(size=2))
+    old, call, result = UserMessage("old"), _call("a"), _result("a")
+    await memory.add_many([old, call])
+
+    await memory.add(result)
+
+    assert memory.messages == [call, result]
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_latest_call_owns_result_when_tool_call_id_is_reused() -> None:
+    memory = SlidingMemory(SlidingMemoryConfig(size=3))
+    old_call, old_result, latest_call = _call("a"), _result("a"), _call("a")
+    await memory.add_many([old_call, old_result, latest_call])
+    latest_result = _result("a")
+
+    await memory.add(latest_result)
+
+    assert len(memory.messages) == 2
+    assert memory.messages[0] is latest_call
+    assert memory.messages[1] is latest_result
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_text_only_assistant_before_tool_exchange_is_evicted_alone() -> None:
+    memory = SlidingMemory(SlidingMemoryConfig(size=3))
+    thinking, call, result = AssistantMessage("thinking"), _call("a"), _result("a")
+    await memory.add_many([thinking, call, result])
+    newest = UserMessage("newest")
+
+    await memory.add(newest)
+
+    assert len(memory.messages) == 3
+    assert memory.messages[0] is call
+    assert memory.messages[1] is result
+    assert memory.messages[2] is newest
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_pending_result_fits_after_text_only_assistant_is_evicted() -> None:
+    memory = SlidingMemory(SlidingMemoryConfig(size=3))
+    thinking, call, result_a = AssistantMessage("thinking"), _call("a", "b"), _result("a")
+    await memory.add_many([thinking, call, result_a])
+    result_b = _result("b")
+
+    await memory.add(result_b)
+
+    assert len(memory.messages) == 3
+    assert memory.messages[0] is call
+    assert memory.messages[1] is result_a
+    assert memory.messages[2] is result_b
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_consecutive_plain_assistant_messages_evict_one_at_a_time() -> None:
+    memory = SlidingMemory(SlidingMemoryConfig(size=2))
+    first, second, third = AssistantMessage("first"), AssistantMessage("second"), AssistantMessage("third")
+    await memory.add_many([first, second])
+
+    await memory.add(third)
+
+    assert memory.messages == [second, third]
