@@ -8,7 +8,7 @@ import { ChatModelOutput } from "@/backend/chat.js";
 import { UserMessage } from "@/backend/message.js";
 import { FakeListChatModel } from "@langchain/core/utils/testing";
 import { AIMessageChunk } from "@langchain/core/messages";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, onTestFinished, vi } from "vitest";
 
 const finishReasonFor = (response_metadata: Record<string, unknown>) => {
   const model = new LangChainChatModel(new FakeListChatModel({ responses: ["hi"] }));
@@ -57,5 +57,24 @@ describe("LangChain chat adapter finish reason", () => {
       prepare(new AIMessageChunk({ content: "", response_metadata: {} })),
     ];
     expect(ChatModelOutput.fromChunks(chunks).finishReason).toBe("length");
+  });
+});
+
+describe("LangChain chat adapter stop sequences", () => {
+  const stopFor = async (parameters: string[] | undefined, input: string[] | undefined) => {
+    const llm = new FakeListChatModel({ responses: ["hi"] });
+    const generate = vi.spyOn(FakeListChatModel.prototype, "_generate");
+    onTestFinished(() => generate.mockRestore());
+    const model = new LangChainChatModel(llm, { stopSequences: parameters });
+    await model.create({ messages: [new UserMessage("x")], stopSequences: input });
+    return generate.mock.calls[0][1]?.stop;
+  };
+
+  it.each([
+    [["model"], undefined, ["model"]],
+    [["model"], ["call"], ["call"]],
+    [undefined, ["call"], ["call"]],
+  ])("with model %j and call %j sends %j", async (parameters, input, expected) => {
+    expect(await stopFor(parameters, input)).toEqual(expected);
   });
 });

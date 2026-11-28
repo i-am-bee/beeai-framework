@@ -113,7 +113,7 @@ export class LangChainChatModel extends ChatModel {
 
     const options: BaseChatModelCallOptions = {
       runId: run.runId,
-      stop: input.stopSequences,
+      stop: input.stopSequences ?? this.parameters.stopSequences,
       signal: run.signal,
       tool_choice: input.toolChoice,
     };
