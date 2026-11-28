@@ -6,9 +6,11 @@
 import { LangChainChatModel } from "@/adapters/langchain/backend/chat.js";
 import { ChatModelOutput } from "@/backend/chat.js";
 import { UserMessage } from "@/backend/message.js";
+import { DynamicTool, StringToolOutput } from "@/tools/base.js";
 import { FakeListChatModel } from "@langchain/core/utils/testing";
 import { AIMessageChunk } from "@langchain/core/messages";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, onTestFinished, vi } from "vitest";
+import { z } from "zod";
 
 const finishReasonFor = (response_metadata: Record<string, unknown>) => {
   const model = new LangChainChatModel(new FakeListChatModel({ responses: ["hi"] }));
@@ -57,5 +59,43 @@ describe("LangChain chat adapter finish reason", () => {
       prepare(new AIMessageChunk({ content: "", response_metadata: {} })),
     ];
     expect(ChatModelOutput.fromChunks(chunks).finishReason).toBe("length");
+  });
+});
+
+describe("LangChain chat adapter tools", () => {
+  const weather = new DynamicTool({
+    name: "weather",
+    description: "Current weather",
+    inputSchema: z.object({ city: z.string() }),
+    handler: async () => new StringToolOutput("sunny"),
+  });
+
+  it.each([
+    [weather, "weather", '{"city":"Paris"}'],
+    ["auto", "auto", "hi"],
+  ] as const)("sends tools and tool choice %#", async (toolChoice, expected, response) => {
+    const llm = new FakeListChatModel({ responses: [response] });
+    const bindTools = vi.fn((_tools: unknown[]) => llm);
+    Object.assign(llm, { bindTools });
+    const generate = vi.spyOn(FakeListChatModel.prototype, "_generate");
+    onTestFinished(() => generate.mockRestore());
+
+    await new LangChainChatModel(llm).create({
+      messages: [new UserMessage("x")],
+      tools: [weather],
+      toolChoice,
+    });
+
+    expect(bindTools.mock.calls[0][0]).toEqual([
+      {
+        type: "function",
+        function: {
+          name: "weather",
+          description: "Current weather",
+          parameters: await weather.getInputJsonSchema(),
+        },
+      },
+    ]);
+    expect(generate.mock.calls[0][1]).toHaveProperty("tool_choice", expected);
   });
 });

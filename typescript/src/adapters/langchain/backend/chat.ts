@@ -13,6 +13,7 @@ import {
   ChatModelOutput,
   ChatModelParameters,
 } from "@/backend/chat.js";
+import { Tool } from "@/tools/base.js";
 import { RunContext } from "@/context.js";
 import { Emitter } from "@/emitter/emitter.js";
 import {
@@ -83,7 +84,7 @@ export class LangChainChatModel extends ChatModel {
     const preparedInput = this.prepareInput(input, run);
     const response = this.lcLLM.bindTools
       ? await this.lcLLM
-          .bindTools(input.tools ?? [])
+          .bindTools(await this.prepareTools(input))
           .invoke(preparedInput.messages, preparedInput.options)
       : await this.lcLLM.invoke(preparedInput.messages, preparedInput.options);
 
@@ -98,7 +99,7 @@ export class LangChainChatModel extends ChatModel {
 
     const stream = this.lcLLM.bindTools
       ? await this.lcLLM
-          .bindTools(input.tools ?? [])
+          .bindTools(await this.prepareTools(input))
           .stream(preparedInput.messages, preparedInput.options)
       : await this.lcLLM.stream(preparedInput.messages, preparedInput.options);
 
@@ -108,6 +109,19 @@ export class LangChainChatModel extends ChatModel {
     }
   }
 
+  protected async prepareTools(input: ChatModelInput) {
+    return await Promise.all(
+      (input.tools ?? []).map(async (tool) => ({
+        type: "function" as const,
+        function: {
+          name: tool.name,
+          description: tool.description,
+          parameters: await tool.getInputJsonSchema(),
+        },
+      })),
+    );
+  }
+
   protected prepareInput(input: ChatModelInput, run: RunContext<this>) {
     const messages = toLCMessages(input.messages);
 
@@ -115,7 +129,7 @@ export class LangChainChatModel extends ChatModel {
       runId: run.runId,
       stop: input.stopSequences,
       signal: run.signal,
-      tool_choice: input.toolChoice,
+      tool_choice: input.toolChoice instanceof Tool ? input.toolChoice.name : input.toolChoice,
     };
 
     return { messages, options };
