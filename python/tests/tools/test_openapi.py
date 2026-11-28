@@ -7,6 +7,7 @@ from urllib.parse import parse_qs
 
 import httpx
 import pytest
+from pydantic import ValidationError
 
 from beeai_framework.tools import ToolError
 from beeai_framework.tools.openapi import OpenAPITool
@@ -295,6 +296,33 @@ def test_input_schema_keeps_parameter_descriptions() -> None:
     assert properties["limit"]["description"] == "Max items, 1-100"
     assert properties["offset"]["description"] == "offset"
     assert properties["sort"]["description"] == "Order"
+
+
+@pytest.mark.unit
+def test_input_schema_resolves_referenced_required_parameters() -> None:
+    schema = _schema(
+        "https://example.invalid",
+        "/pets/{petId}",
+        {
+            "parameters": [
+                {"$ref": "#/components/parameters/PetId"},
+                {"$ref": "#/components/parameters/Limit"},
+            ]
+        },
+    )
+    schema["components"] = {
+        "parameters": {
+            "PetId": {"name": "petId", "in": "path", "required": True, "schema": {"type": "integer"}},
+            "Limit": {"name": "limit", "in": "query", "schema": {"type": "integer"}},
+        }
+    }
+
+    [tool] = OpenAPITool.from_schema(schema)
+
+    assert tool.input_schema.model_json_schema()["properties"]["parameters"]["required"] == ["petId"]
+    tool.input_schema.model_validate({"parameters": {"petId": 7}})
+    with pytest.raises(ValidationError):
+        tool.input_schema.model_validate({"parameters": {"limit": 10}})
 
 
 @pytest.mark.unit

@@ -290,7 +290,7 @@ class OpenAPITool(Tool[BaseModel, ToolRunOptions, OpenAPIToolOutput]):
                     parameters = {
                         "type": "object",
                         "additionalProperties": False,
-                        "required": [p["name"] for p in operation_parameters if p.get("required")],
+                        "required": [],
                         "properties": {},
                     }
 
@@ -300,6 +300,8 @@ class OpenAPITool(Tool[BaseModel, ToolRunOptions, OpenAPIToolOutput]):
                                 **p.get("schema", {}),
                                 "description": _parameter_description(p),
                             }
+                            if p.get("required"):
+                                parameters["required"].append(p["name"])  # type: ignore
                         else:
                             ref_obj = get_referenced_object(self.open_api_schema, p["$ref"])
                             if ref_obj and "name" in ref_obj and "schema" in ref_obj:
@@ -307,6 +309,8 @@ class OpenAPITool(Tool[BaseModel, ToolRunOptions, OpenAPIToolOutput]):
                                     **ref_obj["schema"],
                                     "description": _parameter_description(ref_obj),
                                 }
+                                if ref_obj.get("required"):
+                                    parameters["required"].append(ref_obj["name"])  # type: ignore
 
                     properties["parameters"] = resolve_schema_refs(parameters, defs)
 
