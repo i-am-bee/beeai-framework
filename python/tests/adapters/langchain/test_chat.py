@@ -1,11 +1,14 @@
 # Copyright 2026 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
 
+from collections.abc import AsyncIterator
 from typing import Any
 
 import pytest
 from langchain_core.language_models.fake_chat_models import GenericFakeChatModel
-from langchain_core.messages import AIMessage
+from langchain_core.messages import AIMessage, AIMessageChunk
+from langchain_core.messages.ai import UsageMetadata
+from langchain_core.outputs import ChatGenerationChunk
 
 from beeai_framework.adapters.langchain.backend.chat import LangChainChatModel
 from beeai_framework.backend.message import UserMessage
@@ -230,3 +233,40 @@ def test_prepared_model_carries_the_stop_sequences(call_stop: list[str] | None, 
     # The structured output path does not forward invoke kwargs, so the model itself must hold them.
     assert prepared.first.stop == expected  # type: ignore[attr-defined]
     assert fake.stop == ["END"]
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_stream_emits_each_chunk() -> None:
+    model = LangChainChatModel(GenericFakeChatModel(messages=iter([AIMessage(content="one two three")])))
+    tokens: list[str] = []
+
+    output = await model.run([UserMessage("Count")], stream=True).on(
+        "new_token", lambda data, _: tokens.append(data.value.get_text_content())
+    )
+
+    assert [token for token in tokens if token] == ["one", " ", "two", " ", "three"]
+    assert output.get_text_content() == "one two three"
+
+
+class _UsageStreamingFakeChatModel(GenericFakeChatModel):
+    # LangChain reports usage as per-chunk deltas that add up to the total
+    async def _astream(self, *args: Any, **kwargs: Any) -> AsyncIterator[ChatGenerationChunk]:
+        for text, input_tokens, output_tokens in (("Hello", 10, 1), (" world", 0, 2)):
+            usage = UsageMetadata(
+                input_tokens=input_tokens, output_tokens=output_tokens, total_tokens=input_tokens + output_tokens
+            )
+            yield ChatGenerationChunk(message=AIMessageChunk(content=text, usage_metadata=usage, id="msg_1"))
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_stream_adds_up_usage_across_chunks() -> None:
+    model = LangChainChatModel(_UsageStreamingFakeChatModel(messages=iter([])))
+
+    output = await model.run([UserMessage("Hi")], stream=True)
+
+    assert output.get_text_content() == "Hello world"
+    assert output.usage.prompt_tokens == 10
+    assert output.usage.completion_tokens == 3
+    assert output.usage.total_tokens == 13
