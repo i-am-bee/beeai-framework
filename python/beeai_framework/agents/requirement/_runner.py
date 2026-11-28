@@ -302,7 +302,7 @@ class RequirementAgentRunner:
                 if not request.can_stop:
                     return await self._run(request)
 
-                await self._reasoner.update(requirements=[])
+                # Keep the requirements: they already let the agent stop, and they still apply to the next steps.
                 updated_request = await self._create_request(
                     extra_rules=[Rule(target=self._reasoner.final_answer.name, allowed=True, hidden=False)],
                 )
