@@ -453,6 +453,90 @@ def test_type_list_is_a_union_of_types() -> None:
 
 
 @pytest.mark.unit
+@pytest.mark.parametrize(
+    ("property_schema", "real_value", "omission_allowed", "omitted_value", "none_allowed"),
+    [
+        ({"type": ["string", "null"]}, "text", False, None, True),
+        ({"anyOf": [{"type": "string"}, {"type": "null"}]}, "text", False, None, True),
+        ({"oneOf": [{"type": "string"}, {"type": "null"}]}, "text", False, None, True),
+        ({"type": "null"}, None, False, None, True),
+        ({"type": ["string", "null"], "default": None}, "text", True, None, True),
+        ({"const": "fixed"}, "fixed", True, "fixed", False),
+        ({"title": "Value"}, "text", False, None, True),
+        ({"enum": ["a", None]}, "a", False, None, True),
+        (None, "text", False, None, True),
+    ],
+    ids=[
+        "type-list",
+        "any-of",
+        "one-of",
+        "null",
+        "explicit-null-default",
+        "const",
+        "no-type",
+        "enum-with-null",
+        "pydantic-round-trip",
+    ],
+)
+def test_required_nullable_property(
+    property_schema: dict[str, Any] | None,
+    real_value: Any,
+    omission_allowed: bool,
+    omitted_value: Any,
+    none_allowed: bool,
+) -> None:
+    if property_schema is None:
+
+        class NullableModel(BaseModel):
+            value: str | None
+
+        schema = NullableModel.model_json_schema()
+    else:
+        schema = {
+            "type": "object",
+            "properties": {"value": property_schema},
+            "required": ["value"],
+        }
+
+    model = JSONSchemaModel.create("required_nullable", schema)
+
+    if omission_allowed:
+        assert model.model_validate({}).model_dump()["value"] == omitted_value
+    else:
+        with pytest.raises(ValidationError):
+            model.model_validate({})
+    if none_allowed:
+        assert model.model_validate({"value": None}).model_dump()["value"] is None
+    else:
+        with pytest.raises(ValidationError):
+            model.model_validate({"value": None})
+    if real_value is not None:
+        assert model.model_validate({"value": real_value}).model_dump()["value"] == real_value
+
+
+@pytest.mark.unit
+def test_nested_required_nullable_property() -> None:
+    model = JSONSchemaModel.create(
+        "nested_required_nullable",
+        {
+            "type": "object",
+            "properties": {
+                "outer": {
+                    "type": "object",
+                    "properties": {"value": {"type": ["string", "null"]}},
+                    "required": ["value"],
+                }
+            },
+            "required": ["outer"],
+        },
+    )
+
+    with pytest.raises(ValidationError):
+        model.model_validate({"outer": {}})
+    assert model.model_validate({"outer": {"value": None}}).model_dump() == {"outer": {"value": None}}
+
+
+@pytest.mark.unit
 def test_property_without_type_accepts_any_value() -> None:
     # FastMCP's schema for a `value: Any` parameter has no "type".
     model = JSONSchemaModel.create(
