@@ -122,10 +122,14 @@ class JSONSchemaModel(ABC, BaseModel):
             const = param.get("const")
             # With a type list, each keyword is applied below to the types it constrains.
             scoped = isinstance(param.get("type"), list)
+            field_default = default if default is not None else const
+            # A const or explicit default still lets the key be omitted.
+            if param_name in required and "default" not in param and "const" not in param:
+                field_default = ...
 
             target_field = Field(
                 description=param.get("description"),
-                default=default if default is not None else const,
+                default=field_default,
                 pattern=None if scoped else param.get("pattern"),
                 ge=None if scoped else param.get("minimum"),
                 le=None if scoped else param.get("maximum"),
