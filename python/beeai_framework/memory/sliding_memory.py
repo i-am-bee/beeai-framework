@@ -12,22 +12,30 @@ from beeai_framework.memory.base_memory import BaseMemory
 from beeai_framework.memory.errors import ResourceError
 
 
-def _tool_exchange(messages: list[AnyMessage], index: int) -> slice:
-    """Return the span of the tool exchange the message at index belongs to (itself if none).
+def _has_tool_calls(message: AnyMessage) -> bool:
+    return isinstance(message, AssistantMessage) and bool(message.get_tool_calls())
 
-    An exchange is an assistant message with tool calls followed by the tool messages that answer it. Chat APIs
-    (OpenAI, Anthropic) reject a tool result without its call, so the window evicts an exchange as a whole.
+
+def _tool_exchange(messages: list[AnyMessage], index: int) -> slice:
+    """Return the tool exchange containing index, or index alone.
+
+    An exchange is consecutive assistant tool calls followed by their tool results. Chat APIs such as OpenAI and
+    Anthropic reject a tool result without its call, so the window evicts the whole exchange.
     """
     start = index
-    while start > 0 and isinstance(messages[start], ToolMessage):
+    while start > 0 and (
+        isinstance(messages[start], ToolMessage)
+        or (_has_tool_calls(messages[start]) and _has_tool_calls(messages[start - 1]))
+    ):
         start -= 1
-    first = messages[start]
-    if not (isinstance(first, AssistantMessage) and first.get_tool_calls()):
+    if not _has_tool_calls(messages[start]):
         return slice(index, index + 1)
-    end = start + 1
+    end = start
+    while end < len(messages) and _has_tool_calls(messages[end]):
+        end += 1
     while end < len(messages) and isinstance(messages[end], ToolMessage):
         end += 1
-    return slice(start, end) if start <= index < end else slice(index, index + 1)
+    return slice(start, end) if index < end else slice(index, index + 1)
 
 
 class SlidingMemoryHandlers(TypedDict, total=False):
@@ -93,7 +101,9 @@ class SlidingMemory(BaseMemory):
             index: Optional position to insert message
 
         Raises:
-            ResourceFatalError: If removal selector fails to prevent overflow
+            ResourceError: If removal selector returns a message not in memory
+            ResourceError: If removal selector does not free enough room
+            ResourceError: If a tool-result call must be evicted ("The tool exchange cannot fit inside current memory")
         """
         # Check for overflow
         if self._is_overflow():
@@ -109,6 +119,20 @@ class SlidingMemory(BaseMemory):
             remaining_messages = self._messages.copy()
             removed: list[AnyMessage] = []
             selected: list[AnyMessage] = []
+            pending_ids = (
+                {result.tool_call_id for result in message.get_tool_results()}
+                if isinstance(message, ToolMessage)
+                else set()
+            )
+            pending_call = next(
+                (
+                    msg
+                    for msg in reversed(remaining_messages)
+                    if isinstance(msg, AssistantMessage)
+                    and any(call.id in pending_ids for call in msg.get_tool_calls())
+                ),
+                None,
+            )
             for msg in to_remove:
                 if any(msg is r for r in removed) and not any(msg is s for s in selected):
                     continue
@@ -121,7 +145,12 @@ class SlidingMemory(BaseMemory):
                         # context={"message": msg, "messages": self._messages},
                     ) from ValueError
                 span = _tool_exchange(remaining_messages, msg_index)
-                removed.extend(remaining_messages[span])
+                exchange = remaining_messages[span]
+                if pending_call is not None and any(stored is pending_call for stored in exchange):
+                    raise ResourceError(
+                        f"The tool exchange cannot fit inside current memory ({self.config.size} messages)."
+                    )
+                removed.extend(exchange)
                 del remaining_messages[span]
 
             # Check if we still have overflow
